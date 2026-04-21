@@ -8,7 +8,7 @@ maturity: Implemented
 
 # ContentEditable Line Indentation
 
-A reusable pattern for Tab / Shift+Tab indentation in a shared `contentEditable` editor that still works when the selection covers partial lines and mixed inline typography spans.
+A reusable pattern for accessible line indentation in a shared `contentEditable` editor that still works when the selection covers partial lines and mixed inline typography spans.
 
 ## Problem
 
@@ -17,6 +17,7 @@ Naive indentation approaches break fast:
 - `document.execCommand("indent")` is inconsistent across browsers
 - rewriting `textContent` destroys inline styling spans
 - partial-line selections often indent only the exact substring instead of the whole line
+- hijacking raw `Tab` / `Shift+Tab` traps keyboard users inside the editor
 
 ## Pattern
 
@@ -29,17 +30,19 @@ Naive indentation approaches break fast:
 4. Apply indentation from the bottom upward so earlier DOM positions stay valid:
    - **Indent:** insert a leading `\\t` at each selected line start
    - **Outdent:** remove one leading `\\t` when present
-5. Rebuild the plain-text model and restore the selection by text indices so the user keeps the same logical selection after the DOM mutation.
+5. Trigger that logic from toolbar buttons and modifier shortcuts (for example `Ctrl+]` / `Ctrl+[`) instead of raw `Tab`, and expose the keyboard escape path in visible help text or `aria-describedby`.
+6. Rebuild the plain-text model and restore the selection by text indices so the user keeps the same logical selection after the DOM mutation.
 
 ## Why This Works
 
 - Preserves inline spans created by mixed typography formatting
 - Treats partial-line selections as whole-line operations
-- Keeps Tab / Shift+Tab behavior in the shared editor without requiring a richer document schema
+- Keeps indentation available without breaking WCAG keyboard escape expectations
 
 ## Monoscape Reference
 
 - `packages/ui/src/TextEditor.tsx`
+- `packages/ui/src/FormattingToolbar.tsx`
 
 ## Validation
 
