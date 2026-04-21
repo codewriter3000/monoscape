@@ -466,6 +466,108 @@ None are MVP requirements. Defer until product proven.
 
 ---
 
+### 16. Shared Typography Controls Architecture
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** ✅ IMPLEMENTED & APPROVED
+
+Keep the font catalog, categories, and size ladder in `packages/document-core`, but keep runtime-only acquisition paths outside the shared UI.
+
+**Why:**
+- Web, desktop, and mobile all need the same family + size controls and the same canonical font names.
+- Desktop can support richer acquisition flows (validated Google Fonts search) without leaking Tauri or secrets into `packages/ui`.
+- Uploaded or search-added fonts should be removable session-level additions, not edits to the built-in shared catalog.
+
+**Implementation Shape:**
+- `packages/document-core/src/index.ts` owns `SHARED_FONT_CATALOG`, `FONT_SIZE_OPTIONS`, category labels, and Google stylesheet helpers.
+- `packages/ui/src/TextEditor.tsx` owns typography state and loading of Google/uploaded fonts.
+- `packages/ui/src/FormattingToolbar.tsx` renders shared controls and consumes an optional `searchGoogleFonts` capability.
+- `apps/desktop/src-tauri/src/main.rs` performs validated Google Fonts lookup and `apps/desktop/src/App.tsx` injects that capability into the shared editor.
+
+**Consequences:** Font acquisition stays behind platform boundaries while font presentation stays shared across web/desktop/mobile.
+
+---
+
+### 17. Desktop Google Fonts Boundary — Tauri Backend Only
+
+**Date:** 2026-04-21  
+**Author:** Morpheus  
+**Status:** ✅ IMPLEMENTED & APPROVED
+
+Google Fonts search/download is implemented as Tauri commands only. The Rust backend reads `GOOGLE_WEBFONTS_API_KEY` (via dotenvy in dev) and proxies all API requests, returning only sanitized metadata (family/category/variants/subsets) plus relative font file paths. Downloaded fonts are stored under the app data directory in `fonts/google/`, while uploaded fonts live in `fonts/uploaded/`.
+
+**Rationale:**
+Keeping API calls in the desktop backend prevents key exposure in the browser runtime and preserves the thin-shell boundary. Using the app data directory avoids temp storage and keeps fonts durable across sessions. Returning relative paths ensures the frontend can construct local asset URLs without leaking full filesystem paths.
+
+**Consequences:**
+- Web and mobile shells must degrade gracefully (no Google Fonts API calls).
+- Frontend font loading should use the returned relative path with the app data directory.
+- Any future cache eviction should operate within the same app data `fonts/` tree.
+
+---
+
+### 18. Font Controls Feature Reviewer Gate
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** Active Guidance — Implementation Gate Pending
+
+Comprehensive acceptance gate for font controls feature covering font selection, font size, file operations, categorization, and desktop Google Fonts integration.
+
+**Scope:**
+- Font family dropdown with alphabetical sorting, category filtering, and platform-specific fallback (web/mobile read-only)
+- Font size dropdown (8pt–32pt presets + custom input with range validation 4–72pt)
+- File upload/remove operations (desktop only, `.ttf`/`.otf`/`.woff`/`.woff2` validation, confirmation dialog)
+- Font categorization (System, Uploaded, Google Fonts [Desktop only])
+- Desktop Google Fonts search/download with local caching
+- Web/mobile graceful degradation
+
+**Acceptance Criteria Summary:**
+1. ✅ Font dropdown works on all platforms with correct fallback behavior
+2. ✅ Font size dropdown (8pt–32pt) + custom input with validation
+3. ✅ Upload/remove file operations on Desktop only; files stored in user profile (no temp, no secrets)
+4. ✅ Font categorization visible (System, Uploaded, Google Fonts [Desktop])
+5. ✅ Google Fonts search/download on Desktop only; API calls from Tauri backend, no client-side key exposure
+6. ✅ Web/Mobile graceful fallback: Google Fonts hidden, upload hidden, size/font read-only or limited
+7. ✅ Editor selection behavior not broken: selection preserved, format state synced, undo/redo works
+8. ✅ All keyboard navigation tests pass per WCAG 2.2 AA (Tab, Arrow, Home/End, Enter, Escape)
+9. ✅ No focus traps in dropdowns; Tab escape verified
+10. ✅ All high-severity regression risks mitigated or explicitly deferred with documented rationale
+
+**Known Regression Risks (High Severity):**
+| Risk | Mitigation |
+|------|-----------|
+| Focus trap in font/size dropdown | Implement arrow-key escape: Right on last item closes dropdown and moves focus to next control. |
+| Font name injection via upload | Validate font family name; reject special characters/quotes; sanitize as CSS identifier. |
+| Google Fonts API key leaked to client | All API calls from Tauri backend (Rust), never browser JS. Audit: check DevTools network tab. |
+| Editor selection lost when dropdown opens | Preserve `document.getSelection()` before dropdown opens; restore after. |
+| Inaccessible dropdown (keyboard users stuck) | Full keyboard navigation (Tab, Arrow, Home/End, Enter, Escape) per WCAG 2.2 AA. Aria labels required. |
+
+**Regression Test Matrix:**
+- 16 test cases covering font/size dropdowns, upload/remove, cross-platform behavior, accessibility, keyboard navigation
+- Platform validation: Web (Chrome/Firefox), Desktop (Tauri), Mobile (Android emulator)
+- Edge cases: multi-font selection, missing fonts, OOM on upload, cache eviction
+
+**Anti-Patterns — Reject If Present:**
+- Font dropdown traps keyboard focus (Tab doesn't escape)
+- Google Fonts API key visible in browser network tab or console
+- Uploaded fonts stored in `/tmp` or system temp directory
+- Font names allow `"`, `'`, `<`, `>` or other special characters without sanitization
+- Mobile shows Google Fonts search UI
+- Web shows upload button
+- Aria labels missing on dropdown buttons
+- No validation on custom size input
+- Undo/redo doesn't work for font changes
+- TextEditor selection lost after dropdown interaction
+- No error handling for network failures (Google Fonts download hangs)
+- File upload allows `.exe`, `.bat`, `.sh` or other non-font formats
+- No confirmation dialog before removing font
+
+**Verdict:** 🟡 AWAITING IMPLEMENTATION — All criteria defined; ready for Trinity/Morpheus handoff and cross-platform validation.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
