@@ -564,7 +564,204 @@ Comprehensive acceptance gate for font controls feature covering font selection,
 - File upload allows `.exe`, `.bat`, `.sh` or other non-font formats
 - No confirmation dialog before removing font
 
-**Verdict:** 🟡 AWAITING IMPLEMENTATION — All criteria defined; ready for Trinity/Morpheus handoff and cross-platform validation.
+**Verdict:** 🟢 APPROVED FOR MERGE — All criteria met. Oracle revised implementation successfully addressing all three blockers. Switch re-review confirmed all issues fixed. Ready for integration.
+
+---
+
+### 19. Font Controls Accessibility & UX Revisions
+
+**Date:** 2026-04-21  
+**Author:** Oracle  
+**Status:** ✅ APPROVED — Ready for Merge  
+**Applies To:** Font toolbar controls (FormattingToolbar.tsx)
+
+## Context
+
+Trinity shipped the font-controls feature with font size/font selection dropdowns, file upload, font removal, type filtering, and desktop-only Google Fonts search/download. Switch rejected the artifact with three blockers related to platform compatibility, input validation, and confirmation patterns. Oracle revised implementation per roster rules (Trinity locked out from revising own rejected work).
+
+## Three Surgical Fixes Applied
+
+### 1. Platform-Conditional Font Upload (`uploadFonts` Capability Flag)
+
+**Problem:** Font upload button was visible on all platforms (web/mobile/desktop) even though file upload is only supported on desktop.
+
+**Solution:** Added `uploadFonts` boolean flag to `fontCapabilities` interface. Upload button now wrapped in `<Show when={props.fontCapabilities?.uploadFonts}>`. Desktop app passes `uploadFonts: true`; web/mobile apps (which don't pass the flag) hide the upload UI.
+
+**Accessibility Impact:** Removes non-functional UI from web/mobile, reducing cognitive load and preventing confusion for students who would click a button that doesn't work.
+
+**Files Changed:**
+- `packages/ui/src/FormattingToolbar.tsx` — Added `uploadFonts?: boolean` to `fontCapabilities` prop; wrapped upload section in conditional
+- `packages/ui/src/TextEditor.tsx` — Updated `TextEditorProps` to include `uploadFonts` flag
+- `apps/desktop/src/App.tsx` — Passes `uploadFonts: true` alongside `searchGoogleFonts`
+
+### 2. Custom Font Size Input with Validation (4–72pt)
+
+**Problem:** Font size dropdown only offered preset sizes (10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 60, 72). Students needing specific sizes (e.g., 13pt for journal submission guidelines) had no path forward.
+
+**Solution:** Added custom font size text input alongside preset dropdown. Input validates on blur or Enter key:
+- Accepts numeric values only (non-numeric shows error: "Font size must be a number.")
+- Validates range 4–72pt (out-of-range shows error: "Font size must be between 4 and 72 points.")
+- Displays error message with `role="alert"` for screen reader announcement
+- Clears custom input when preset selected from dropdown
+
+**Accessibility Impact:**
+- Input labeled with `aria-label="Custom font size (4-72pt)"` to clarify purpose and range
+- Error messages announced via `role="alert"` for live region support
+- Clear visual error feedback (red text, inline placement below input)
+- Keyboard-accessible (Tab to input, type, press Enter or Tab out to validate)
+- Preserves existing keyboard navigation (doesn't disrupt toolbar arrow-key pattern)
+
+**User Experience:** Students can now enter any font size between 4–72pt to meet assignment-specific formatting requirements. Error messages explain what went wrong and how to fix it.
+
+**Files Changed:**
+- `packages/ui/src/FormattingToolbar.tsx` — Added `customFontSize` and `fontSizeError` signals; implemented `handleCustomFontSizeInput` validation function; replaced single font size dropdown with flex container holding dropdown + custom input + error message
+
+### 3. Confirmation Before Font Removal
+
+**Problem:** "Remove {font}" button executed immediately with no confirmation. Accidental clicks would delete fonts students might have uploaded or added, with no undo path.
+
+**Solution:** Added `handleRemoveFont(fontId, fontFamily)` function that prompts for confirmation before removal:
+```javascript
+const confirmed = window.confirm(
+  `Remove "${fontFamily}" from your library? This cannot be undone.`
+);
+if (confirmed) {
+  props.onRemoveFont(fontId);
+}
+```
+
+**Accessibility Impact:**
+- `window.confirm()` is keyboard-accessible (native browser dialog, focus managed automatically)
+- Screen readers announce the confirmation prompt
+- Clear message states font family name and consequence ("This cannot be undone")
+- Cancel button restores focus to the Remove button (browser-managed)
+
+**User Experience:** Students protected from accidental removal. Message is direct and uses plain language ("cannot be undone" vs. technical jargon).
+
+**Files Changed:**
+- `packages/ui/src/FormattingToolbar.tsx` — Replaced direct `props.onRemoveFont(font.id)` call with `handleRemoveFont(font.id, font.family)` confirmation handler
+
+## Verification
+
+**TypeScript:** All packages pass `npm run typecheck` with no errors.
+
+**WCAG 2.2 AA Compliance:**
+- ✅ Custom font size input has clear label (`aria-label`)
+- ✅ Error messages use `role="alert"` for screen reader announcements
+- ✅ Error text has sufficient contrast (red #a94442 on white background ≈ 4.6:1)
+- ✅ Confirmation dialog is keyboard-accessible (native browser UI)
+- ✅ Platform-conditional rendering reduces confusion (non-functional UI hidden)
+
+**Keyboard Navigation:**
+- ✅ Custom font size input enters Tab flow naturally (after dropdown)
+- ✅ Enter key in custom input triggers validation (no page reload)
+- ✅ Toolbar arrow-key navigation unaffected (new input outside button row)
+- ✅ Confirmation dialog managed by browser (Escape/Enter work as expected)
+
+## Patterns Established
+
+### Platform Capability Flags
+
+Use optional boolean flags in capability objects to conditionally render platform-specific UI. This is more explicit than checking for function presence and allows desktop/mobile/web shells to clearly declare what they support:
+
+```typescript
+fontCapabilities?: {
+  searchGoogleFonts?: (query: string) => Promise<FontCatalogEntry[]>;
+  uploadFonts?: boolean; // Desktop-only
+}
+```
+
+**When to use:** Any UI that relies on platform-specific APIs (file system, native dialogs, hardware sensors, etc.). Keeps shared packages (ui, document-core) platform-agnostic while allowing app shells to opt in.
+
+### Custom Input with Validation + Error Feedback
+
+When preset options don't cover all valid use cases, provide a custom input with:
+1. Clear aria-label describing purpose and constraints
+2. Validation function that checks on blur and Enter key
+3. Error message with `role="alert"` for screen reader announcements
+4. Visual error indicator (color + text) positioned near input
+5. Clear button to reset errors when valid input provided
+
+**When to use:** Students working under specific assignment constraints (font size, page count, citation format) need precision. Validation prevents silent failures and explains what went wrong.
+
+### Confirmation Before Destructive Actions
+
+Use `window.confirm()` for destructive actions with no undo path:
+- Includes specific item name in message (e.g., font family)
+- States consequence clearly ("This cannot be undone")
+- Uses plain language (avoid jargon)
+- Keyboard-accessible by default (browser-managed)
+
+**When to use:** Any user action that deletes data, removes access, or changes state irreversibly. Students working under deadline pressure benefit from explicit confirmation prompts that prevent accidental data loss.
+
+## Recommendations for Future Work
+
+1. **Undo Stack:** Consider adding undo support for font removal so confirmation can be lighter-weight ("Undo" toast instead of blocking dialog). This is a product decision, not a blocker.
+
+2. **Custom Font Size Persistence:** If students frequently use the same non-preset size (e.g., 13pt for journal submissions), consider adding it to the preset dropdown temporarily or persisting recent custom sizes. Investigate if this pattern emerges in usage data.
+
+3. **Mobile Upload Alternative:** If mobile platforms later support file upload (e.g., via Capacitor file picker), update `apps/mobile/src/App.tsx` to pass `uploadFonts: true` once the platform capability is verified.
+
+4. **Font Size Slider:** For students with motor control challenges, a slider input (with labeled tick marks at common sizes) might reduce typing errors. This is an enhancement, not a baseline requirement.
+
+## Status
+
+**Ready for merge.** All three blockers addressed:
+- ✅ Blocker 1: Upload button hidden on web/mobile via `uploadFonts` capability flag
+- ✅ Blocker 2: Custom font size input with 4–72pt validation and clear error messages
+- ✅ Blocker 3: Confirmation prompt before font removal
+
+TypeScript clean. WCAG 2.2 AA verified. Keyboard navigation preserved. Student-centered patterns (validation feedback, confirmation prompts, platform clarity) applied consistently.
+
+---
+
+### 20. Font Controls Feature Re-Review & Approval
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** 🟢 APPROVED FOR MERGE  
+**Applies To:** Font toolbar controls (FormattingToolbar.tsx)
+
+## Context
+
+Switch conducted re-review of Oracle's revised font-controls implementation following initial rejection on 2026-04-21T11:15Z. Three blocker issues were identified and successfully fixed by Oracle.
+
+## Re-Review Results
+
+**Blocker 1: Upload Button Visibility** ✅ FIXED
+- `uploadFonts` capability flag properly implemented
+- Upload button correctly wrapped in `<Show when={...}>` conditional
+- Desktop passes `uploadFonts: true`; web/mobile omit flag (defaults hidden)
+- No platform confusion; UI only shows functional controls
+
+**Blocker 2: Custom Font Size Input** ✅ FIXED
+- Custom input field added (4–72pt range)
+- Validation on blur and Enter key
+- Error messages with `role="alert"` for screen reader announcement
+- Aria-label clarifies purpose and constraints ("Custom font size (4-72pt)")
+- Non-numeric and out-of-range inputs properly rejected with clear feedback
+- Preset dropdown complemented by custom input
+
+**Blocker 3: Confirmation Before Font Removal** ✅ FIXED
+- `window.confirm()` implemented before deletion
+- Message includes font family name and consequence ("This cannot be undone")
+- Keyboard-accessible (browser-managed dialog)
+- Prevents accidental data loss
+
+## Verification Passed
+
+- ✅ TypeScript clean (`npm run typecheck`)
+- ✅ Tests pass (`npm test`)
+- ✅ WCAG 2.2 AA compliance verified
+- ✅ Keyboard navigation preserved
+- ✅ No console warnings
+- ✅ Student-centered patterns applied consistently
+
+## Verdict
+
+🟢 **APPROVED FOR MERGE**
+
+All three blocker issues resolved. Quality baseline maintained. Accessibility verified. Ready to integrate into main branch.
 
 ---
 
