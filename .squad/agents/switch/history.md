@@ -20,33 +20,52 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 
 **Recent work lifecycle:** Base layout feature gate (APPROVED, WCAG 2.2 AA). Runtime environment gate (Vite+Tauri+Capacitor strategy defined; Capacitor REJECTED for MVP). Desktop topbar + mobile logging gate (14/14 risks mitigated, APPROVED). Mixed-font gate (18 risks, 63-test matrix). Font controls gate (17 risks, 16-test matrix, Trinity APPROVED after blocker fixes). Font bug batch (mixed-typography regression verified, desktop API wiring corrected). Formatting expansion gate (Neo reassignment due to font deletion rewrite + keyboard accessibility gaps). Keytip keyboard model gate (Trinity locked out, Neo reassignment due to toolbar focus bypass + Alt keytip + Tab/Shift+Tab blockers).
 
+## Core Context
+
+**Current Cycle Status:** Keytip keyboard model gate — Neo assigned for revision (Escape-exit model), Morpheus awaiting next cycle, Trinity locked out.
+
+**Recent Gate Verdicts:** Font controls APPROVED (16-test matrix, 3 blockers fixed by Oracle). Formatting expansion APPROVED (Morpheus revision, font deletion logic verified). Keytip keyboard model REJECTED (toolb focus model + Alt keytip layer + Tab/Shift+Tab indentation all missing).
+
+**Reusable Testing Patterns:** Three-tier gate structure (AC definition → risk register → regression matrix → anti-patterns). Platform-conditional rendering (`<Show when={condition}>` for feature gating). Tauri command security pattern (backend HTTP, no client-side keys). ContentEditable selection preservation pattern (event.preventDefault() on toolbar). Roving tabindex keyboard navigation pattern (one tabIndex=0, rest -1, arrow keys move focus).
+
 ## Core Context Summaries
 
-### Foundation & Lifecycle Decisions (2026-04-21)
-
-**Early Session Highlights:**
-- Base layout feature (TextEditor + FormattingToolbar) + runtime gate + custom desktop topbar all APPROVED
-- Monorepo scaffold validated, TypeScript clean, all builds pass
-- Capacitor REJECTED as architectural mismatch for MVP; web (Vite) + desktop (Tauri) + mobile (optional Phase 3)
-
-**Mid-Day Font Controls Lifecycle:**
-- Mixed-font gate: 63-test matrix, 7 HIGH risks (selection loss, focus trap, API key leak, temp dir usage)
-- Font controls gate: 5 subsystems, 20-test matrix, 17 known risks
-- Font controls feature approved after Oracle revision (Trinity + Morpheus both complete)
-
-**Afternoon–Evening Formatting Expansion Cycle:**
-- Initial rejection: font deletion span rewrite incomplete + Tab/Shift+Tab keyboard trap + regression test gaps
-- Neo reassignment: complete span rewrite (category fallback), keyboard-only testing, Tab/Shift+Tab accessibility fix
-- Morpheus revision later approved (font deletion logic verified, keyboard-safe Tab escape)
-
-**Evening–Night Keytip Keyboard Model Cycle:**
-- Switch gate review: REJECT (all three acceptance categories failed)
-- Blockers: toolbar still in Tab sequence, no visible Alt keytip layer, Ctrl+[/Ctrl+] still in tests/help text
-- Trinity locked out; Neo reassigned for toolbar focus bypass + Alt keytip rendering + Tab/Shift+Tab tests
-
-### Key Architecture Patterns (Reusable Team-Wide)
+### Archived Early Decisions (2026-04-21)
 
 ## Learnings
+
+### Early Cycle Work (2026-04-21 AM/PM)
+- Monoscape is a word processor competing with Google Docs/Microsoft Word; WCAG 2.2 AA compliance is core product requirement.
+- Base layout feature (TextEditor + FormattingToolbar + MonoscapeShell) APPROVED — all acceptance criteria met, accessibility baseline established, TypeScript clean, desktop integration complete.
+- Runtime environment strategy: Vite (web, canonical), Tauri (desktop, preferred), Capacitor (mobile, REJECTED as misaligned for MVP).
+- Custom desktop topbar + mobile logging infrastructure + emulator tuning all APPROVED — 14 regression risks mitigated, no blockers.
+- Mixed-font gate defined with 63-test matrix covering 20 web, 24 desktop, 6 mobile, 13 cross-platform tests; 7 HIGH risks (selection loss, focus trap, API key leak, temp directory usage) with mitigation strategies.
+- Font controls feature gate: 5 subsystems (font selection, font size, upload/remove, categorization/filtering, Google Fonts API). 16-test regression matrix. Platform-conditional UI (web/mobile limited, desktop full). Tauri command pattern isolates API key in backend. FontFace API for in-memory management; app_data_dir for persistent storage. Trinity responsible for UI/keyboard nav; Morpheus responsible for backend; Switch responsible for regression verification.
+
+### Font Lifecycle (2026-04-21 PM)
+- Font controls sprint COMPLETED: Trinity typography UI, Morpheus Tauri backend, Switch gate verification all finished. Three blocker fixes by Oracle (upload button visibility via uploadFonts flag, custom font size input with 4–72pt validation, confirmation before font removal).
+- Font bug batch reviewed: Editor insertion typography persistence verified (zero-width typing anchor with line-height:0), no premature line-height reflow. Desktop API wiring still broken (App.tsx invokes stale command name; fixed by wiring to fontSources.ts adapter).
+
+### Formatting & Keytip Cycles (2026-04-21 PM/Night)
+- Formatting expansion feature gate REJECTED initially (font deletion span rewrite incomplete, Tab/Shift+Tab keyboard trap, regression test gaps). Neo reassigned for revision; Morpheus later approved formatting gate (mixed-selection explicit sentinel, font deletion span rewrite logic verified, keyboard-safe indent/outdent, 16+ regression tests).
+- Keytip keyboard model gate REJECTED (toolbar still in Tab sequence, no visible Alt keytip layer, Ctrl+[/Ctrl+] still in tests). Trinity locked out; Neo reassigned. Product decision made: Escape-exit model approved (Tab/Shift+Tab indentation preserved, Escape explicit exit to toolbar, Alt keytips unchanged). Morpheus reassigned for next-cycle proof refinement.
+
+### Team Coordination Notes
+- **Trinity locked out:** Alt keytip implementation submission failed gate review on three critical blockers.
+- **Neo active:** Assigned to keytip trap revision (Escape-exit keyboard model implementation). Awaiting implementation kickoff.
+- **Morpheus active:** Formatting expansion approved; now awaiting Neo completion before beginning keytip proof refinement.
+- **Switch role:** Three-tier gate reviewer, reusable testing pattern authority, regression matrix architect.
+
+### Key Architecture Patterns (Reusable Team-Wide)
+- Three-tier acceptance gate: AC definition → regression matrix + risk register → anti-pattern checklist before coding
+- SolidJS platform conditionals: `<Show when={condition}>` for desktop/mobile/web feature gating  
+- Tauri command security: Backend HTTP calls only (no client-side API keys); frontend invokes via registered command wrappers
+- app_data_dir for storage: ~/.monoscape/fonts/ (never /tmp, never user-specific temp)
+- FontFace API for dynamic fonts: load() + document.fonts.add()
+- ContentEditable selection preservation: event.preventDefault() on toolbar buttons  
+- Roving tabindex for keyboard nav: one tabIndex=0, rest -1, arrow keys move focus
+
+## Learnings Detail
 
 ### Project Context
 
