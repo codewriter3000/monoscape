@@ -18,6 +18,7 @@ Use this when a desktop-only feature needs secrets, network access, or filesyste
 - Load secrets from environment on the Rust side (e.g., dotenv in dev), never in frontend JS.
 - Return minimal metadata and relative paths so the frontend can load assets without full filesystem disclosure.
 - Add thin desktop-only wrappers in `apps/desktop/src` that guard on `__TAURI_IPC__`.
+- Keep invoke command names in a single desktop adapter module; app surfaces should import the adapter instead of hard-coding invoke strings.
 
 ## Examples
 - `apps/desktop/src-tauri/src/main.rs` exposes `google_fonts_search` and `google_fonts_download` using `GOOGLE_WEBFONTSDEVAPI`.
@@ -27,3 +28,4 @@ Use this when a desktop-only feature needs secrets, network access, or filesyste
 - Calling external APIs with secrets from browser JS.
 - Writing downloads to temp directories instead of app data storage.
 - Importing Tauri APIs directly in shared packages.
+

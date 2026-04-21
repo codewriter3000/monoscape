@@ -765,8 +765,150 @@ All three blocker issues resolved. Quality baseline maintained. Accessibility ve
 
 ---
 
+### 8. Trinity Font Regression Fix
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** APPROVED
+
+Caret-only font family and font size changes in the shared `contentEditable` editor should be represented by a temporary typing span with a zero-width non-editable anchor element, not by a styled marker character. After a user commits a font family or font size change from the toolbar, focus should return to the editor so the saved insertion point and pending typography survive the control interaction.
+
+**Why:**
+- Styled marker characters changed line metrics before any real text existed, causing premature line-height jumps
+- Toolbar focus changes could clear temporary insertion state before typing began
+- Returning focus to the editor matches word-processor expectations and keeps dense editing flows fast
+
+**Implementation:**
+- `packages/ui/src/TextEditor.tsx` now inserts zero-width `data-monoscape-typing-anchor` with `line-height: 0` and `font-size: 0`
+- `packages/ui/src/FormattingToolbar.tsx` returns focus to editor after typography changes
+- Verified: Two typed characters remain in single styled span; line-height delta = 0
+
+---
+
+### 9. Morpheus — Desktop Font API Contract Follow-up
+
+**Date:** 2026-04-21  
+**Author:** Morpheus  
+**Status:** Proposed Team Rule
+
+Desktop Tauri invoke names should have one source of truth in `apps/desktop/src/fontSources.ts`; feature surfaces like `apps/desktop/src/App.tsx` should call wrappers, not hard-code command strings.
+
+**Why:**
+A stale direct invoke in `App.tsx` drifted from the registered Rust command name and broke Google Fonts search at runtime. The wrapper already had the correct `google_fonts_search` contract and desktop guards, so bypassing it created an avoidable boundary leak.
+
+**Evidence:**
+- Frontend had `invoke("search_google_fonts", { query })`
+- Tauri registers `google_fonts_search` in `src-tauri/src/main.rs`
+- Tauri missing-command rejection format is `command {} not found`
+- Toolbar catch path logs `Unable to search Google Fonts.`
+
+**Proposed Team Rule:**
+When a desktop capability exists, expose it once from `apps/desktop/src/*Sources.ts` (or equivalent adapter) and import that adapter everywhere else.
+
+---
+
+### 10. Switch Font Bug Gate
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** REJECTED PENDING DESKTOP API FIX
+
+**Scope:** Editor insertion typography persistence, no premature line-height reflow after collapsed font-size changes, and desktop Google Fonts API wiring.
+
+**Evidence:**
+
+**Editor Status:** ✅ PASS
+- Browser-driven check confirmed collapsed font-size changes persist across multiple inserted characters
+- Typing `AB` after switching to 24pt left both characters in single styled typography span
+- Collapsed 72pt font-size changes no longer force immediate line-height growth
+- `TextEditor.tsx` now inserts zero-width `data-monoscape-typing-anchor` with `line-height: 0` and `font-size: 0`
+- Measured line-height delta stayed at 0
+
+**Desktop API Status:** ❌ FAIL
+- `apps/desktop/src/App.tsx` still calls `invoke("search_google_fonts", { query })`
+- `apps/desktop/src-tauri/src/main.rs` registers `google_fonts_search`, not `search_google_fonts`
+- `apps/desktop/src/fontSources.ts` already contains the correct `google_fonts_search` wrapper but `App.tsx` is not using it
+- `npm run validate` fails because desktop search function returns wrong shape for `TextEditor`'s `searchGoogleFonts` capability
+
+**Acceptance Gate:**
+
+Required to pass:
+1. **Insertion typography persistence** — Changing font size or font family with collapsed caret must keep subsequent inserted characters in the chosen typography until the user changes it again. Evidence must show at least two typed characters staying in same styled span.
+2. **No premature line-height reflow** — Changing font size at collapsed caret must not expand current line before visible text inserted. Evidence must show no line-height delta immediately after size change.
+3. **Working desktop font API** — Desktop font search must call registered Tauri command name. Function wired into `TextEditor` must return `FontCatalogEntry[]` shape toolbar expects. `npm run validate` must pass.
+
+**Verdict:** Editor fixes are credible. Desktop is not. Do not approve this bundle until `App.tsx` is rewired to working desktop font API path and repo validates clean.
+
+---
+
+### 11. Oracle UX/Accessibility Review: Font Control Redesign
+
+**Date:** 2026-04-21  
+**Reviewer:** Oracle (Accessibility & UX)  
+**Status:** Guidance Document (Pre-Implementation Review)
+
+**Task:** Review interaction model for complex font control with filter and add-font actions.
+
+**Current State:** FormattingToolbar.tsx uses two separate HTML `<select>` elements (filter by category and font family selection). Google Font search and font removal accessed via separate row controls.
+
+**Proposed State:** Replace two-select pattern with a **complex control** that combines font selection, filtering, add-font, and search discovery in one cohesive widget, modeled on Google Docs/Word behavior.
+
+**Accessibility & UX Verdict:** The concept is sound for power users and matches the mental model students develop in competitor tools. However, keyboard accessibility and screen-reader semantics require careful design.
+
+**Key Requirements:**
+
+1. **Keyboard Navigation:**
+   - Tab flow: Single stop (not one per sub-element)
+   - Down/Up arrows: Navigate font list
+   - Enter: Confirm selection and close dropdown
+   - Escape: Close without changing selection
+   - Home/End: First/last font in filtered view
+   - Type-ahead: Search by font name
+
+2. **Screen Reader Semantics:**
+   - Trigger button: `role="button" aria-expanded aria-haspopup="listbox"`
+   - Dropdown container: `role="listbox"`
+   - Font entries: Announced during selection
+   - Search input: Scoped focus management
+
+3. **Tab Flow Within Dropdown:**
+   - Search input Tab should move to filtered font list or next control if empty
+   - Embedded CTA buttons (add-font) included in flow
+
+4. **Category Filter:**
+   - Left/Right arrows cycle through categories
+   - Enter confirms category, re-filters list
+
+**Recommendation:** Design implementation preserving WCAG 2.2 AA compliance before coding complex control.
+
+---
+
+### 12. Trinity Decision Inbox — Mixed Font Behavior
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** Implementation Guidance
+
+**Decision:** Keep the editor canvas default typography on the root editable surface, but apply user font-family and font-size changes as inline typography at the selection or caret level.
+
+**Why:**
+- Professional editors like Google Docs and Word treat font changes as local formatting, not document-wide chrome state
+- The shared `packages/ui` editor needs consistent mixed-font behavior across desktop and web while keeping desktop-only font acquisition behind injected capabilities
+- A complex shared font picker keeps font browsing, filtering, and add-font actions in one place without leaking Tauri-specific APIs into shared package
+
+**Implementation Notes:**
+- `packages/ui/src/TextEditor.tsx` wraps selected text in styled spans and inserts temporary typing span for collapsed caret changes so subsequent typing inherits chosen family/size
+- `packages/ui/src/FormattingToolbar.tsx` exposes complex font picker with embedded filter and `+` menu containing exactly `From Local` and `From Google Fonts`
+- `packages/document-core/src/index.ts` resolves computed font-family stacks back to known catalog names so toolbar can reflect caret-local typography
+
+**Follow-up:**
+If we later add export/import or OT/CRDT document modeling, preserve inline typography semantics instead of reintroducing container-wide font state.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
