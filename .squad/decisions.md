@@ -1331,6 +1331,38 @@ Keep `Tab` / `Shift+Tab` line indentation inside the shared `contentEditable` ed
 
 ---
 
+### 36. Morpheus — Keytip Proof Revision
+
+**Date:** 2026-04-21  
+**Author:** Morpheus  
+**Status:** Implementation Complete — Oracle Gate Verified
+
+The Alt-keytip + Tab-indent model requires one extra boundary rule to stay WCAG-safe: once Escape or Alt moves focus onto a top-level toolbar control that is intentionally outside the normal Tab order, plain Tab / Shift+Tab must leave the entire editor shell rather than bouncing focus back into the editor canvas.
+
+## Decision
+
+- Keep plain Tab / Shift+Tab bound to indent / outdent while the editor owns focus.
+- Keep top-level toolbar controls at `tabIndex={-1}` so sequential focus skips them.
+- Preserve Escape as the explicit editor-to-toolbar exit and preserve Alt keytips as the explicit toolbar entry path.
+- Add a parent-owned navigate-out seam for top-level toolbar controls reached through Escape or Alt so Tab / Shift+Tab can move to the previous / next external focus target.
+- Allow font size and line spacing commits to skip automatic editor refocus when the user is tabbing away, otherwise the blur path recreates the trap.
+
+## Why
+
+The previous model had an unproven and real trap risk: Escape could move focus to the toolbar, but the next Tab from that programmatically focused control would fall back into the editor, where Tab is repurposed for indentation and can no longer advance out of the composite. The fix keeps the product's chosen keyboard contract intact while restoring a deterministic escape route.
+
+## Evidence
+
+- `packages/ui/src/TextEditor.test.tsx` now mounts the editor between external focus boundaries and proves:
+  1. sequential focus order skips toolbar controls
+  2. Tab / Shift+Tab indent and outdent inside the editor
+  3. Escape moves focus to the toolbar
+  4. Tab / Shift+Tab from toolbar focus leave the shell
+  5. Alt keytips still focus / activate the expected controls
+- `packages/ui/src/FormattingToolbar.tsx` adds the top-level Tab exit handling and non-refocusing blur commit path for size / spacing inputs.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

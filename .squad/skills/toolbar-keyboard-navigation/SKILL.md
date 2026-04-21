@@ -220,6 +220,27 @@ If product explicitly changes the keyboard contract so plain Tab must **skip** t
 - Reviewer only sees mouse evidence, not keyboard evidence
 - Editor indentation shortcuts and toolbar access rules contradict each other
 
+### Monoscape follow-up: avoid the composite trap
+
+If **Escape** or **Alt+keytip** can programmatically focus a top-level toolbar control that is otherwise removed from the sequential Tab order, plain **Tab / Shift+Tab** on that focused control must navigate **outside the whole editor shell**, not back into the editor canvas.
+
+- Keep the toolbar controls at `tabIndex={-1}` for normal document flow.
+- Add a parent-owned `onNavigateOut(direction)` seam so the toolbar can delegate the actual next/previous focus target outside the composite.
+- Intercept Tab/Shift+Tab only on the top-level keytip/Escape targets (for example font trigger, font size input, line spacing input, formatting buttons).
+- When a control normally refocuses the editor after commit, allow a `focusEditor: false` path for blur / Tab exits so the user does not get bounced back into the document.
+
+### Proof upgrade
+
+Use a mounted test with explicit focus boundaries before and after the editor shell, then prove this sequence:
+
+1. sequential focus order skips toolbar controls
+2. plain Tab / Shift+Tab inside the editor indents / outdents and keeps focus in the editor
+3. Escape moves focus to the primary toolbar control
+4. Tab / Shift+Tab from that toolbar control leaves the shell to the external next / previous target
+5. Alt keytips still focus or activate toolbar targets after the escape rule lands
+
+This is the minimum proof that the split model is powerful without becoming a keyboard trap.
+
 ## Author
 
 **Oracle** (Accessibility & UX)  
