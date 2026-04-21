@@ -873,6 +873,29 @@ The current formatting controls (Bold/Italic/Underline, Font Family, Font Size) 
 - `packages/document-core/src/index.test.ts` — Regression matrix
 - Platform-specific testing (desktop, web, mobile)
 
+---
+
+### 24. Neo: Formatting Blocker Revision — Tab/Shift+Tab & Font Deletion Rewrite Decision
+
+**Date:** 2026-04-21  
+**Author:** Neo  
+**Status:** Proposed  
+
+Preserve shared line-indent behavior, but stop binding indentation to raw Tab / Shift+Tab inside the editor. The shared editor now keeps Tab as the focus-escape path, exposes the rule in visible helper text, and uses toolbar actions plus explicit modifier shortcuts (Ctrl+] / Ctrl+[) for indent and outdent.
+
+Imported-font removal must also be a document rewrite, not just a control-state update. When an uploaded font is removed, `packages/ui/src/TextEditor.tsx` rewrites existing inline `font-family` references in editor content to the same-category fallback returned by `findFontFallback`, so stale spans do not survive after deletion.
+
+**Why:**
+- Oracle's accessibility warning stands: raw Tab interception in a shared contentEditable editor creates a keyboard trap
+- Switch's rejection was correct: deleting a font without rewriting old spans leaves the document in an inconsistent state
+- Both fixes stay within the shared editor boundary and avoid leaking runtime-specific behavior into web or desktop shells
+
+**Files Affected:**
+- `packages/ui/src/TextEditor.tsx` — Font deletion fallback rewrite + Tab/Shift+Tab → Ctrl+]/Ctrl+[ mapping
+- `packages/ui/src/FormattingToolbar.tsx` — Toolbar actions for indent/outdent
+- `packages/document-core/src/index.ts` — Formatting model + fallback logic
+- `packages/document-core/src/index.test.ts` — Regression coverage
+
 **Keyboard Navigation:**
 - ✅ Custom font size input enters Tab flow naturally (after dropdown)
 - ✅ Enter key in custom input triggers validation (no page reload)
