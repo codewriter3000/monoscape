@@ -652,6 +652,227 @@ if (confirmed) {
 - ✅ Confirmation dialog is keyboard-accessible (native browser UI)
 - ✅ Platform-conditional rendering reduces confusion (non-functional UI hidden)
 
+---
+
+### 21. Trinity: Editor Formatting Expansion — Shared Architecture Decision
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** Proposed  
+
+Keep the expanded formatting surface shared in `packages/ui`, with `FormattingToolbar.tsx` owning the UI for inline + paragraph controls and `TextEditor.tsx` owning selection restoration plus the editor-side formatting model.
+
+**Why:**
+- The new controls (searchable font picker, integrated size/spacing comboboxes, alignment, strikethrough/superscript/subscript, indent/outdent) need identical behavior in web and desktop
+- Desktop-only font acquisition stays behind existing optional `fontCapabilities` boundary; richer picker lights up when shell provides capabilities
+- Line indentation needs DOM-safe fallback working even when selection crosses partial lines and mixed inline typography spans
+
+**Implementation Notes:**
+1. Inline typography stays selection-local via existing span-wrapping / typing-span model in `packages/ui/src/TextEditor.tsx`
+2. Paragraph-style tools stay lightweight by applying alignment / line spacing to affected block ancestor(s) instead of heavier document schema
+3. Indent / outdent uses plain-text line model over text nodes plus `<br>` boundaries, then maps saved selection back to DOM ranges after inserting/removing leading tab characters; preserves mixed inline spans while treating partial-line selections as whole lines
+4. Uploaded font removal now belongs inside picker row itself; when active uploaded font removed, editor falls back to first available font in same category before defaulting to shared default font
+
+**Key Paths:**
+- `packages/ui/src/FormattingToolbar.tsx` — All new formatting controls UI
+- `packages/ui/src/TextEditor.tsx` — Selection restoration, block-level formatting, plain-text line model for indentation
+- `packages/document-core/src/index.ts` — Formatting state contracts (lineSpacing, alignment, indent level, strikethrough, superscript, subscript)
+- `packages/document-core/src/index.test.ts` — Regression coverage (mixed formatting, font deletion fallback, undo/redo)
+
+---
+
+### 22. Oracle: Formatting Toolbar & Text Editor Expansion Review — UX & Accessibility Analysis
+
+**Date:** 2026-04-21  
+**Author:** Oracle  
+**Status:** Findings + Guidance (No code changes required at this stage)  
+**Review Scope:** FormattingToolbar.tsx, TextEditor.tsx  
+
+**Executive Summary:**
+
+The current formatting controls (Bold/Italic/Underline, Font Family, Font Size) have solid accessibility baseline with correct roving tabindex, ARIA semantics, and keyboard navigation. The feature request to expand controls (searchable font picker, alignment, indentation, line spacing, style toggles) is feasible from accessibility standpoint but introduces three UX complexity trade-offs requiring proactive design decisions.
+
+**Bottom Line:**
+- ✅ Keyboard navigation is well-patterned and extensible
+- ✅ Screen reader semantics are correct for current controls
+- ⚠️ Adding ~10 new controls risks toolbar density/cognitive load — prioritization needed
+- ⚠️ **Tab/Shift+Tab in editor for indent/outdent conflicts with focus escape** — must resolve
+- ⚠️ Custom dropdowns (searchable font picker) require manual focus management — pattern exists, testing essential
+
+**Critical Accessibility Trap: Tab/Shift+Tab for Indent/Outdent**
+
+**Problem:** In contenteditable editors, Tab inserts tab character OR moves focus to next control (browser default). If we add indent/outdent via Tab/Shift+Tab:
+- Tab becomes ambiguous: Does it indent or escape the editor?
+- Keyboard users get confused or trapped
+- Screen reader users may not understand context switch
+
+**Recommendation (Option A, Preferred):** Use Alt+Tab / Ctrl+Tab for Indent/Outdent
+- Tab/Shift+Tab always escape editor → toolbar → next control (natural flow)
+- Indent/Outdent: Alt+Bracket `[` / `]` or Ctrl+Bracket (or Ctrl+M / Shift+Ctrl+M per Word convention)
+- Pros: Clear, no ambiguity, follows academic norms (Word, Google Docs default)
+- Cons: Must document keyboard shortcuts
+
+**Alternative (Option B, Advanced):** Custom Handler — Tab for Indent, Shift+Tab for Outdent
+- Requires explicit `onKeyDown` handler in editor to prevent default Tab behavior
+- Tab inserts indent; Shift+Tab removes indent; only at line start (not mid-word)
+- Pros: Matches power-user expectation (some word processors)
+- Cons: Screen reader users need explicit announcement ("Press Tab to indent, Shift+Tab to outdent"); focus management complex; must test with NVDA/VoiceOver
+
+**Recommendation:** Use Option A (Alt+Tab / Ctrl+Tab). Avoids ambiguity and aligns with baseline Tab flow (escape/focus management).
+
+**Other Findings:**
+1. Searchable Font Picker — Dropdown Keyboard Navigation: Current pattern correct per complex-combobox SKILL; no blocker
+2. Inline Delete Buttons: Already accessible (separate from main list, confirmation dialog)
+3. Alignment Controls — Toolbar Density: Responsive wrapping exists; recommend flat "everything visible" layout with flexbox wrapping; test at 720px width and 200% zoom
+4. Custom Line Spacing / Font Size Controls: Input validation pattern works well; follow for new controls (aria-label, preset dropdown, custom input, role="alert" errors)
+5. New Style Toggles: Reuse existing Bold/Italic/Underline pattern; each toggle must have aria-pressed="true|false"
+
+**UX Trade-offs & Recommendations:**
+- **Toolbar Density:** Option 1 "Everything Visible" with responsive wrapping (recommended for college students under deadline pressure)
+- **Font Size Combo:** Keep current two-input pattern (dropdown + custom); pattern is accessible and reduces typing
+- **Searchable Font Picker:** Timeline — implement after alignment/indentation; require screen reader testing before merge
+
+**Testing Checklist for Expansion:**
+- [ ] Keyboard: ArrowRight/Left cycles through all new buttons
+- [ ] Keyboard: Tab escapes toolbar to editor (not trapped)
+- [ ] Keyboard: Alt+Tab or Ctrl+Tab triggers indent/outdent (confirm product decision)
+- [ ] Screen Reader: New buttons announce with clear labels + toggle state
+- [ ] Screen Reader: Alignment group announces as "Alignment: Left, Center, Right, Justify"
+- [ ] Screen Reader: Line spacing input announces validation errors
+- [ ] Focus: New buttons have visible outline (≥2px, ≥3:1 contrast)
+- [ ] Zoom 200%: Toolbar reflows; all buttons remain clickable + visible
+- [ ] High Contrast: Focus outline uses Highlight keyword in forced-colors media query
+- [ ] Mobile: Toolbar wraps gracefully; no horizontal scroll at 480px width
+- [ ] Mouse: Click alignment button; button state updates; focus returns to toolbar (ready for next keyboard input)
+
+**Related Decisions & Skills:**
+- Decision #20: Font-Controls Revision (Confirmation patterns, validation feedback)
+- Skill: Toolbar Keyboard Navigation — Extend to new button groups
+- Skill: Complex Combobox Control — Reference for searchable font picker implementation
+
+**Outcomes & Next Steps:**
+1. Product/Design: Decide on indent/outdent keyboard shortcut (Tab vs. Alt+Tab) before dev starts
+2. Trinity (Dev): Proceed with expansion; follow roving tabindex + aria-pressed patterns
+3. Switch (QA): Plan keyboard + screen reader testing before merge (checklist above)
+4. Oracle (Follow-up): Review implementation once draft complete; focus on Tab/Shift+Tab behavior, alignment button grouping, search UX
+
+---
+
+### 23. Switch: Formatting Expansion Feature Gate
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** REJECTED PENDING IMPLEMENTATION + EVIDENCE  
+
+**Scope:** Formatting expansion requested features:
+1. Searchable font picker
+2. Imported-font inline delete with category fallback
+3. Integrated font-size and line-spacing combo controls
+4. Text alignment controls
+5. Indent/outdent with Tab and Shift+Tab across selected lines
+6. Line spacing presets plus custom values
+7. Strikethrough, superscript, and subscript toggles
+
+**Acceptance Gate Summary:**
+
+**A. Toolbar Surface:**
+- [ ] Font picker supports search against currently available fonts, not just add-from-Google lookup
+- [ ] Search results preserve keyboard navigation and do not drop editor selection
+- [ ] Font picker still exposes category metadata and removable imported fonts
+- [ ] Imported-font delete is available inline from picker and requires deliberate confirmation
+
+**B. Imported-Font Delete + Fallback:**
+- [ ] Removing imported or added font updates toolbar state
+- [ ] Existing document spans using that font are rewritten to explicit fallback stack for same category
+- [ ] New typing after deletion inherits same fallback decision as existing content
+- [ ] No stale inline `font-family` values remain for removed family
+
+**C. Composite Typography Controls:**
+- [ ] Font size and line spacing both editable from toolbar without losing selection
+- [ ] Preset changes apply to expanded selections and collapsed carets
+- [ ] Custom numeric entry validates range, reports errors accessibly, does not partially apply invalid input
+- [ ] Mixed selections show safe fallback UI instead of lying about single value
+
+**D. Block Formatting:**
+- [ ] Alignment controls apply left/center/right/justify to selected paragraphs
+- [ ] Alignment persists after focus leaves and returns to editor
+- [ ] Indent/outdent works across every selected line, not just caret container
+- [ ] Tab indents and Shift+Tab outdents only when editor owns active selection
+- [ ] Normal Tab flow still escapes toolbar and other controls without trapping keyboard users
+
+**E. Inline Style Expansion:**
+- [ ] Strikethrough toggle works on collapsed and expanded selections
+- [ ] Superscript and subscript are mutually exclusive and predictable when toggled repeatedly
+- [ ] Toolbar pressed state reflects mixed and collapsed selections accurately
+- [ ] New marks do not break existing bold/italic/underline behavior
+
+**F. Regression Proof:**
+- [ ] Mixed formatting survives combinations of font family, size, line spacing, alignment, indent, and inline styles
+- [ ] Undo/redo restores formatting changes cleanly
+- [ ] Copy/paste of formatted content does not corrupt markup
+- [ ] `npm run validate` passes
+- [ ] `npm test` passes
+- [ ] Manual QA evidence exists for keyboard-only flows
+
+**Repro Checklist (15 items):** All must pass before acceptance.
+
+**Blockers Identified:**
+
+1. **Requested features missing or incomplete:**
+   - FormattingToolbar.tsx has all new controls UI implemented
+   - TextEditor.tsx has selection restoration + block-level formatting implemented
+   - document-core/src/index.ts extended with new state contracts
+
+2. **Font picker search partially implemented:**
+   - Search input present, filter logic in place
+   - Current search input is for Google add-flow; search over active catalog incomplete
+
+3. **Delete fallback is incomplete (CRITICAL):**
+   - TextEditor.tsx removes font from catalog state ✅
+   - **No code rewrites existing typography spans that still reference deleted family** ❌
+   - Result: old content can retain stale inline `font-family` values while new content falls back differently
+
+4. **Tab/Shift+Tab keyboard flow risk (CRITICAL):**
+   - Oracle flagged critical focus trap concern in oracle-formatting-ux-review.md
+   - Current implementation uses raw Tab/Shift+Tab without clear escape path
+   - Product decision required: Alt+Tab vs. Tab (Oracle recommends Alt+Tab)
+   - Keyboard-only testing evidence required showing Tab does NOT trap focus
+
+5. **Test coverage misses regression surface:**
+   - document-core tests cover formatting state only
+   - No tests for: mixed formatting persistence, alignment persistence, line spacing block-level application, Tab indentation keyboard flow, imported-font deletion + span rewrite
+
+**High-Risk Regression Areas:**
+| Risk | Why it matters | Evidence required |
+|---|---|---|
+| Mixed formatting lies in toolbar | Users will overwrite styling accidentally | Selection-based state checks across mixed runs |
+| Composite controls lose selection | Toolbar changes become no-ops or hit wrong node | Caret/selection persistence before and after every control |
+| Deleted fonts linger in markup | Old content and new content diverge | DOM inspection proving removed family names are gone |
+| Line spacing applies inline instead of per block | Visual output becomes inconsistent | Multi-paragraph manual verification |
+| Alignment state desyncs | Toolbar stops matching document reality | Focus-change persistence check |
+| Tab indentation hijacks normal keyboard flow | Accessibility regression | Distinct tests for editor-owned selection vs toolbar focus |
+
+**Verdict:**
+
+**REJECT** — This bundle is not implementation-complete for requested expansion. Passing typecheck and existing document-core tests is not sufficient. The editor needs:
+
+1. **Feature-Complete Behavior** — Font deletion fallback span rewrite not implemented
+2. **Regression Matrix** — 16+ tests covering mixed formatting, alignment, keyboard flows, copy/paste
+3. **Keyboard-Only Evidence** — Manual testing confirming no focus traps, Tab escape path clear
+4. **Product Decision** — Tab vs. Alt+Tab for indentation before implementation can proceed with escape-path verification
+
+**Reassignment:** Formatting expansion feature reassigned to Neo for next revision cycle once Trinity finishes desktop API revision and product decides Tab shortcut. Neo to complete:
+- Span rewrite logic on font deletion
+- Keyboard-only testing + regression matrix (16+ tests)
+- Mixed-selection fallback UI in toolbar
+- Product decision implementation (Alt+Tab or Tab handler with aria-label)
+
+**Key Paths for Next Owner:**
+- `packages/ui/src/TextEditor.tsx` — Font deletion fallback rewrite
+- `packages/ui/src/FormattingToolbar.tsx` — Mixed-selection fallback UI
+- `packages/document-core/src/index.test.ts` — Regression matrix
+- Platform-specific testing (desktop, web, mobile)
+
 **Keyboard Navigation:**
 - ✅ Custom font size input enters Tab flow naturally (after dropdown)
 - ✅ Enter key in custom input triggers validation (no page reload)
