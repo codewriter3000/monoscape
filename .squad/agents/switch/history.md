@@ -18,7 +18,39 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 - ContentEditable selection preservation: event.preventDefault() on toolbar buttons
 - Roving tabindex for keyboard nav: one tabIndex=0, rest -1, arrow keys move focus
 
-**Recent spans:** Base layout feature gate, Runtime execution gate (Vite+Tauri+Capacitor), Custom desktop topbar + mobile logging gate (14/14 risks mitigated), Mixed-font gate (18 risks, 7 HIGH severity, 63-test matrix), Font controls gate (17 risks, 16-test matrix), Font bug gate review (rejected desktop wiring until Trinity corrects Tauri command mismatch).
+**Recent spans:** Base layout feature gate, Runtime execution gate (Vite+Tauri+Capacitor), Custom desktop topbar + mobile logging gate (14/14 risks mitigated), Mixed-font gate (18 risks, 7 HIGH severity, 63-test matrix), Font controls gate (17 risks, 16-test matrix), Font bug gate review (rejected desktop wiring until Trinity corrects Tauri command mismatch), Formatting expansion gate review (rejected until font deletion rewrite + Tab keyboard fix), Font controls re-review (Oracle revision approved), formatting expansion approval (Morpheus revision approved).
+
+## Core Context Summaries
+
+### Foundation Decisions (Early 2026-04-21)
+
+**Base Layout + Runtime Gate (2026-04-21 morning):**
+- Base layout feature (TextEditor + FormattingToolbar) APPROVED with all AC met; WCAG 2.2 AA baseline established
+- Runtime execution gate defined: Vite (web), Tauri (desktop), Capacitor+Gradle (mobile optional); Capacitor REJECTED as architectural mismatch for MVP
+- Custom desktop topbar + mobile logging APPROVED: Tauri topbar, mobile log streaming with OOM/ANR detection, emulator tuning via spawn args
+- All three platform features show correct pattern: thin shell + shared editor, WCAG 2.2 AA verified, Tauri backend isolation for sensitive APIs
+
+### Font Controls Lifecycle (2026-04-21 mid-day)
+
+**Fonts Sprint:**
+- Mixed-font gate defined: 63-test matrix, 7 HIGH-severity risks (selection loss, focus trap, API key leak, temp dir usage, etc.), anti-pattern checklist
+- Font controls gate defined: 5 subsystems (font selection, size, upload/remove, categorization, Google Fonts), 20-test matrix, 17 known risks
+- Font controls feature approved after Oracle revision: upload button hidden on web/mobile (uploadFonts capability flag), custom size input (4–72pt validation), confirmation before removal
+- Mixed-typography bug gate: Trinity caret-only insertion persists correctly (zero line-height delta), but desktop Google Fonts API wiring still broken (App.tsx invokes stale command name)
+
+### Formatting Expansion Cycle (2026-04-21 afternoon–evening)
+
+**Initial Rejection:** Formatting expansion feature (searchable font picker, font deletion fallback, composite controls, block formatting) REJECTED by Switch:
+- Font deletion rewrite incomplete: removes from state but doesn't update existing spans still referencing deleted family
+- Tab/Shift+Tab keyboard trap flagged by Oracle (focus escape path unclear)
+- Regression test coverage missing (16+ tests for mixed formatting, alignment, indentation, font deletion)
+
+**Final Approval (Current Session):** Morpheus revision APPROVED:
+- Mixed-selection contract stabilized with explicit null sentinel (prevents toolbar from lying)
+- Font deletion span rewrite logic verified working (category fallback applied to all existing spans)
+- Keyboard-safe indent/outdent confirmed (Tab escape path verified, no trap)
+- 16+ regression tests PASSED (undo/redo, copy/paste, mixed formatting, cross-platform, accessibility)
+- Build clean: npm run validate ✅, npm run build ✅
 
 ## Learnings
 
@@ -30,6 +62,7 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 - Extensions are part of the product strategy and should fit the microkernel architecture.
 - The project is MIT licensed with no premium feature split.
 - **[2026-04-21] Team Update from Neo:** Monorepo scaffold established with apps (desktop, mobile, web), packages (kernel, document-core, ui, extension-sdk), and built-in extensions (citations, review). Root developer foundation complete. Microkernel architecture boundary preserved via npm workspaces.
+
 - **[2026-04-21] Base Layout Feature Review (Switch):** TextEditor + FormattingToolbar implementation meets all acceptance criteria. Key patterns: SolidJS contentEditable with document.execCommand for formatting, roving tabindex for toolbar keyboard nav, aria-pressed for button state. DEFAULT_TYPOGRAPHY constants (12pt Liberation Serif) in document-core, verified in tests. Accessibility baseline (WCAG 2.2 AA) established: toolbar has role=toolbar, buttons have aria-labels, editor has role=textbox. No blocker issues; edge cases (format persistence, multi-format stacking, undo integration) should be validated before prod. Desktop app still needs TextEditor integration. UI package has no unit tests yet—future scope. document.execCommand approach viable short-term but flagged for future migration to modern ContentEditable. Feature gate pass merged to .squad/decisions.md (Decision #6).
 - **[2026-04-21] BASE LAYOUT SESSION COMPLETE:** Feature acceptance approved. All acceptance criteria passed. Toolbar functional (Bold, Italic, Underline). Canvas functional (contentEditable, 300px min height, responsive). Typography verified (12pt Liberation Serif). Format commands execute and state syncs correctly. Cross-platform integration validated (web + desktop). TypeScript + build clean. Accessibility baseline WCAG 2.2 AA verified. Desktop platform parity achieved (TextEditor replaces placeholder). Edge cases identified for future testing: format persistence, multi-format stacking, copy/paste, keyboard stress, empty editor formatting, undo/redo. Verdict: APPROVED FOR MERGE. Orchestration log: .squad/orchestration-log/2026-04-21T12-14-19-switch.md. Session log: .squad/log/2026-04-21T12-14-19-base-layout.md.
 - **[2026-04-21] Runtime Execution Environment Gate (Switch):** Defined acceptance criteria for web, desktop, and mobile execution environments. Key findings: (1) Project has TypeScript compilation but no bundler, no dev server, no native shell runtime. (2) Capacitor REJECTED for this project—architectural mismatch (no native API calls in scope yet), premature complexity, and poor fit for desktop. (3) Recommended path: Vite (web) → Electron/Tauri (desktop) → PWA+Capacitor or React Native (mobile, optional after web proven). (4) Android device (Pixel_9a.avd) verified present and ready for emulator-based testing when mobile runtime selected. (5) Cross-platform regression tests must verify editor functional, accessibility (WCAG 2.2 AA), extension system, typography, and performance on all platforms before shipping. (6) Three-tier implementation roadmap: Phase 1 Web (2 weeks), Phase 2 Desktop (2 weeks), Phase 3 Mobile (2 weeks, optional). Decision filed to .squad/decisions/inbox/switch-runtime-gate.md for team review. Full assessment at ~/.copilot/runtime-gate-assessment.md (session artifact).
