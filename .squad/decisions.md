@@ -1190,6 +1190,117 @@ The previous contract let `TextEditor` pass a single concrete font family, font 
 
 ---
 
+### 32. Oracle Guidance: Alt-Based Keytips & Tab Indentation (Accessibility Review)
+
+**Date:** 2026-04-21  
+**Author:** Oracle  
+**Status:** Active Guidance — Requires Product Decision
+
+Comprehensive accessibility review of two proposed keyboard model changes:
+1. **Alt-based keytips** (blue labels on toolbar controls)
+2. **Tab/Shift+Tab indentation** (instead of Ctrl+]/Ctrl+[)
+
+**Findings:**
+
+**Alt Keytips:** Bare Alt is unsafe cross-platform; use Ctrl+Alt or Shift+Alt instead. Requires:
+- Keytip rendering in small blue text
+- `aria-keyshortcuts` matching displayed shortcut (no mismatch)
+- `role="note"` or `aria-label` for screen reader announcement
+- Help text and first-run tips
+
+**Tab/Shift+Tab Indentation:** Creates keyboard trap risk (WCAG 2.1.2 blocker) unless:
+- Escape always exits editor to predictable location (current implementation ✅ supports)
+- Help text clearly states Tab behavior
+- NVDA test plan written before implementation
+- Empty selection behavior defined
+
+**Recommendation Hierarchy:**
+1. Keep Ctrl+]/Ctrl+[ if Tab/Shift+Tab cannot be fully tested with screen readers first
+2. If Tab/Shift+Tab adopted, Alt keytips become more important
+3. If both adopted, test them together for interaction surprises
+
+**See:** `.squad/decisions/inbox/oracle-alt-keytip-review.md` (full analysis, code locations, testing checklist)
+
+**Product Decision Required:**
+- [ ] Alt Keytips: Yes / No / Later
+- [ ] Tab/Shift+Tab Indentation: Yes / No / Keep Ctrl+]
+- [ ] If Tab/Shift+Tab: Empty selection behavior?
+- [ ] If Tab/Shift+Tab: Who owns NVDA test plan?
+- [ ] Timeline: Can testing happen before merge?
+
+---
+
+### 33. Switch Review Gate: Alt Keytip Keyboard Model
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** REJECTED — Implementation Does Not Meet Requirements
+
+Reviewed Trinity's Alt keytips and Tab/Shift+Tab indentation implementation against three acceptance gates:
+
+**A. Toolbar Focus Boundary:** FAILED
+- Toolbar buttons still receive focus from plain Tab
+- Arrow-key roving tabindex proof insufficient
+- Toolbar not removed from normal Tab order
+
+**B. Alt Keytip Visibility + Activation:** FAILED
+- No rendered keytip layer exists
+- Alt only documented in labels/tooltips, not implemented
+- No assertion of visibility and dismissal in tests
+
+**C. Editor Tab/Shift+Tab Indentation:** FAILED
+- Editor still leaves raw Tab untouched
+- Ctrl+[/Ctrl+] remains in tests and help text
+- Tab interception not visible in codebase
+
+**Blockers:**
+1. Toolbar focus model still wrong (roving tabindex not removed)
+2. Alt keytip system missing (no visible state, no Alt activation tests)
+3. Editor indentation contract still wrong (Ctrl+[ / Ctrl+] in tests)
+
+**Re-review Requirements:**
+Do not resubmit until all three proof buckets exist:
+1. Code implementing new focus/keytip model
+2. Tests asserting exact model
+3. Accessibility review from Oracle before final pass
+
+**Regression Matrix:** All tests in High-priority category failed (Toolbar skip, Alt reveal, Alt activate toggle/focus, Editor indent/outdent, Style preservation, Contract alignment)
+
+**Verdict:** Trinity locked out this cycle. Work reassigned to Neo for revision.
+
+---
+
+### 34. Trinity Decision: Alt keytips and editor Tab indent
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** REJECTED BY SWITCH — Implementation Incomplete
+
+**Proposed Model:**
+
+Monoscape's top-level formatting toolbar is no longer part of the plain Tab sequence. Instead, holding **Alt** reveals blue keytips on each visible primary toolbar control, and **Alt + key** opens or runs that control.
+
+**Reasoning:**
+- Editor needs raw **Tab** and **Shift+Tab** for line indent/outdent
+- Keeping toolbar in Tab order conflicts with document editing speed
+- Alt keytips preserve keyboard reachability without forcing writers out of document flow
+
+**Concrete Shortcuts:**
+- **Alt+F** font picker
+- **Alt+S** font size
+- **Alt+L** line spacing
+- **Alt+B / I / U / T / P / D** inline formatting
+- **Alt+A / C / R / J** alignment
+- **Alt+N / O** indent / outdent
+
+**Implementation Notes:**
+- Toolbar buttons still support arrow-key roving once focused programmatically or by pointer
+- Plain **Tab** indents, **Shift+Tab** outdents whole selected lines (even partial selections)
+
+**Status:** Implementation incomplete per Switch gate review. Neo reassigned for revision work.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

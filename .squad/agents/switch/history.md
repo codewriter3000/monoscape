@@ -18,39 +18,33 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 - ContentEditable selection preservation: event.preventDefault() on toolbar buttons
 - Roving tabindex for keyboard nav: one tabIndex=0, rest -1, arrow keys move focus
 
-**Recent spans:** Base layout feature gate, Runtime execution gate (Vite+Tauri+Capacitor), Custom desktop topbar + mobile logging gate (14/14 risks mitigated), Mixed-font gate (18 risks, 7 HIGH severity, 63-test matrix), Font controls gate (17 risks, 16-test matrix), Font bug gate review (rejected desktop wiring until Trinity corrects Tauri command mismatch), Formatting expansion gate review (rejected until font deletion rewrite + Tab keyboard fix), Font controls re-review (Oracle revision approved), formatting expansion approval (Morpheus revision approved).
+**Recent work lifecycle:** Base layout feature gate (APPROVED, WCAG 2.2 AA). Runtime environment gate (Vite+Tauri+Capacitor strategy defined; Capacitor REJECTED for MVP). Desktop topbar + mobile logging gate (14/14 risks mitigated, APPROVED). Mixed-font gate (18 risks, 63-test matrix). Font controls gate (17 risks, 16-test matrix, Trinity APPROVED after blocker fixes). Font bug batch (mixed-typography regression verified, desktop API wiring corrected). Formatting expansion gate (Neo reassignment due to font deletion rewrite + keyboard accessibility gaps). Keytip keyboard model gate (Trinity locked out, Neo reassignment due to toolbar focus bypass + Alt keytip + Tab/Shift+Tab blockers).
 
 ## Core Context Summaries
 
-### Foundation Decisions (Early 2026-04-21)
+### Foundation & Lifecycle Decisions (2026-04-21)
 
-**Base Layout + Runtime Gate (2026-04-21 morning):**
-- Base layout feature (TextEditor + FormattingToolbar) APPROVED with all AC met; WCAG 2.2 AA baseline established
-- Runtime execution gate defined: Vite (web), Tauri (desktop), Capacitor+Gradle (mobile optional); Capacitor REJECTED as architectural mismatch for MVP
-- Custom desktop topbar + mobile logging APPROVED: Tauri topbar, mobile log streaming with OOM/ANR detection, emulator tuning via spawn args
-- All three platform features show correct pattern: thin shell + shared editor, WCAG 2.2 AA verified, Tauri backend isolation for sensitive APIs
+**Early Session Highlights:**
+- Base layout feature (TextEditor + FormattingToolbar) + runtime gate + custom desktop topbar all APPROVED
+- Monorepo scaffold validated, TypeScript clean, all builds pass
+- Capacitor REJECTED as architectural mismatch for MVP; web (Vite) + desktop (Tauri) + mobile (optional Phase 3)
 
-### Font Controls Lifecycle (2026-04-21 mid-day)
+**Mid-Day Font Controls Lifecycle:**
+- Mixed-font gate: 63-test matrix, 7 HIGH risks (selection loss, focus trap, API key leak, temp dir usage)
+- Font controls gate: 5 subsystems, 20-test matrix, 17 known risks
+- Font controls feature approved after Oracle revision (Trinity + Morpheus both complete)
 
-**Fonts Sprint:**
-- Mixed-font gate defined: 63-test matrix, 7 HIGH-severity risks (selection loss, focus trap, API key leak, temp dir usage, etc.), anti-pattern checklist
-- Font controls gate defined: 5 subsystems (font selection, size, upload/remove, categorization, Google Fonts), 20-test matrix, 17 known risks
-- Font controls feature approved after Oracle revision: upload button hidden on web/mobile (uploadFonts capability flag), custom size input (4–72pt validation), confirmation before removal
-- Mixed-typography bug gate: Trinity caret-only insertion persists correctly (zero line-height delta), but desktop Google Fonts API wiring still broken (App.tsx invokes stale command name)
+**Afternoon–Evening Formatting Expansion Cycle:**
+- Initial rejection: font deletion span rewrite incomplete + Tab/Shift+Tab keyboard trap + regression test gaps
+- Neo reassignment: complete span rewrite (category fallback), keyboard-only testing, Tab/Shift+Tab accessibility fix
+- Morpheus revision later approved (font deletion logic verified, keyboard-safe Tab escape)
 
-### Formatting Expansion Cycle (2026-04-21 afternoon–evening)
+**Evening–Night Keytip Keyboard Model Cycle:**
+- Switch gate review: REJECT (all three acceptance categories failed)
+- Blockers: toolbar still in Tab sequence, no visible Alt keytip layer, Ctrl+[/Ctrl+] still in tests/help text
+- Trinity locked out; Neo reassigned for toolbar focus bypass + Alt keytip rendering + Tab/Shift+Tab tests
 
-**Initial Rejection:** Formatting expansion feature (searchable font picker, font deletion fallback, composite controls, block formatting) REJECTED by Switch:
-- Font deletion rewrite incomplete: removes from state but doesn't update existing spans still referencing deleted family
-- Tab/Shift+Tab keyboard trap flagged by Oracle (focus escape path unclear)
-- Regression test coverage missing (16+ tests for mixed formatting, alignment, indentation, font deletion)
-
-**Final Approval (Current Session):** Morpheus revision APPROVED:
-- Mixed-selection contract stabilized with explicit null sentinel (prevents toolbar from lying)
-- Font deletion span rewrite logic verified working (category fallback applied to all existing spans)
-- Keyboard-safe indent/outdent confirmed (Tab escape path verified, no trap)
-- 16+ regression tests PASSED (undo/redo, copy/paste, mixed formatting, cross-platform, accessibility)
-- Build clean: npm run validate ✅, npm run build ✅
+### Key Architecture Patterns (Reusable Team-Wide)
 
 ## Learnings
 
@@ -79,4 +73,6 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 - **[2026-04-21] Scribe Team Update — Font Bug Batch Orchestration:** Switch font bug gate review completed. Editor fixes APPROVED (caret-only typography persists, zero line-height delta measured). Desktop API wiring REJECTED pending Trinity correction (App.tsx still invokes stale `search_google_fonts` instead of registered `google_fonts_search`; npm run validate fails). Orchestration logs recorded. All 6 batch decisions merged to .squad/decisions.md (entries 8–12: Trinity fix, Morpheus contract rule, Switch gate, Oracle complex control review, Trinity mixed behavior). Inbox cleared. Session log: .squad/log/2026-04-21T17-08-54Z-font-bug-batch.md. Switch gated bundle on Trinity completing desktop API wiring so `npm run validate` passes clean.
 - **[2026-04-21] FORMATTING EXPANSION GATE + IMPLEMENTATION REVIEW (Switch):** Defined the acceptance gate and repro checklist for the next formatting expansion: searchable font picker, imported-font delete with category fallback, integrated font-size + line-spacing controls, alignment, multi-line indent/outdent, and strikethrough/superscript/subscript. Current artifact review result: **REJECT.** Evidence in `packages/ui/src/FormattingToolbar.tsx`, `packages/ui/src/TextEditor.tsx`, and `packages/document-core/src/index.ts` shows the shipped surface still stops at bold/italic/underline plus font family/size; there is no implementation path for line spacing, alignment, indent/outdent, or the three new inline style toggles. `FormattingToolbar.tsx` only exposes font size controls at lines 757–798 and formatting buttons at lines 12–34 / 490–517; `document-core/src/index.ts` still limits `FormattingMark` to bold/italic/underline at line 57; `TextEditor.tsx` has no editor keydown handler for Tab/Shift+Tab or block formatting commands. Additional regression blocker: `removeFont()` in `packages/ui/src/TextEditor.tsx` lines 519–536 removes catalog state but does not rewrite existing inline spans that still reference the deleted family, so category fallback is not enforced in persisted markup. Validation evidence: `npm run validate` ✅ and `npm test` ✅ (document-core 14/14), but no UI automation or document-core tests cover the new regression surface. Decision file: `.squad/decisions/inbox/switch-formatting-expansion-gate.md`. Reusable testing pattern extracted to `.squad/skills/rich-text-formatting-regression-gate/SKILL.md`. Key paths: `packages/ui/src/FormattingToolbar.tsx`, `packages/ui/src/TextEditor.tsx`, `packages/document-core/src/index.ts`, `packages/document-core/src/index.test.ts`.
 - **[2026-04-21T21:27:24Z] Scribe Orchestration Session — Switch Gate Documentation:** Scribe logged session orchestration for Switch's gate review work from prior cycle (2026-04-21T18:00:00Z). Gate review outcome finalized: formatting expansion feature rejected pending Neo implementation of 3 critical gaps — (1) font deletion fallback span rewrite, (2) Tab/Shift+Tab keyboard accessibility fix (product decision required), (3) regression matrix build (16+ tests). Current session: Orchestration log recorded at .squad/orchestration-log/2026-04-21T21-27-24Z-switch.md. Session log: .squad/log/2026-04-21T21-27-24Z-latest-formatting-rejection.md. Team history updated. Switch ready to re-verify Neo's implementation once Neo's revision completes and submits for gate re-review.
+- **[2026-04-21] ALT KEYTIP KEYBOARD MODEL GATE REVIEW (Switch):** Defined the acceptance gate for the requested keyboard model change and reviewed the current UI artifacts. **Verdict: REJECT.** Current implementation still enforces the old contract: toolbar buttons use roving tabindex and arrow-key focus movement (`packages/ui/src/FormattingToolbar.tsx`), the editor helper text still tells users that Tab exits the editor and Ctrl+] / Ctrl+[ handle indentation (`packages/ui/src/TextEditor.tsx`), and the UI test suite still proves that legacy behavior instead of the requested Alt keytip + Tab/Shift+Tab model (`packages/ui/src/TextEditor.test.tsx`). Gate requirements now need explicit proof for three boundaries: (1) toolbar controls are skipped by plain Tab, (2) holding Alt reveals visible blue keytips and Alt+key focuses/activates the matching toolbar target, and (3) plain Tab/Shift+Tab inside the editor indents/outdents selected lines without corrupting formatting or trapping focus outside editor-owned selection. Key reviewer note: passing UI tests are not enough if they only validate the superseded Ctrl+[ / Ctrl+] contract. Supporting evidence: `npm --workspace @monoscape/ui run typecheck` ✅ and `npm --workspace @monoscape/ui run test` ✅, but both currently validate the wrong keyboard model.
+- **[2026-04-21T23:02:14Z] Scribe Session — Keytip Artifact Rejection & Neo Reassignment:** Completed second gate review on Trinity's Alt keytips + Tab/Shift+Tab implementation. **Verdict: REJECT** (all three acceptance gate categories failed). Blockers: (1) **Toolbar focus model still wrong** — roving tabindex not removed from Tab sequence; toolbar buttons still receive focus from plain Tab, (2) **Alt keytip system missing** — no visible keytip layer, no Alt activation logic implemented, tests do not assert keytip state or visibility, (3) **Editor indentation contract still wrong** — Ctrl+[/Ctrl+] remains in tests and help text; plain Tab/Shift+Tab indentation not visible in codebase. Regression matrix: All 11 high-priority tests failed (Toolbar skip, Reverse skip, Alt reveal, Alt activate toggle/focus, Alt dismiss, Editor indent/outdent, Style preservation, Context boundary, Contract alignment). Decision: Trinity locked out this cycle. Work reassigned to Neo for revision. Re-review requirements: Must provide all three proof buckets before resubmission: (1) code implementing new focus/keytip model, (2) tests asserting exact model, (3) accessibility review from Oracle. Orchestration logs created: .squad/orchestration-log/2026-04-21T23-02-14Z-switch.md (gate rejection + reassignment). Decisions merged (#32–#34): Oracle Guidance (full accessibility review), Switch Review Gate (rejection rationale + blockers), Trinity Decision (model spec). Session log: .squad/log/2026-04-21T23-02-14Z-keytip-rejection.md. Inbox cleared. Neo ready to implement revision once product confirms which modifier (bare Alt vs. Ctrl+Alt vs. Shift+Alt) to use.
 

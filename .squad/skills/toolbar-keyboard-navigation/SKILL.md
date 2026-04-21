@@ -179,6 +179,47 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
 3. **Mobile Consideration:** This pattern works for keyboard; touch users may need a different interaction model (future investigation)
 4. **Extension Hooks:** When new buttons are added (e.g., Heading, List), reuse this same pattern; don't create parallel keyboard handlers
 
+## Monoscape Revision — Alt keytips for dense editors
+
+When the editor itself must own raw **Tab** / **Shift+Tab** for document indentation, remove the toolbar's top-level controls from the plain Tab order and expose them through **Alt keytips** instead.
+
+### Updated Monoscape pattern
+
+1. Keep visible primary toolbar controls at `tabIndex={-1}` so plain Tab does not walk the toolbar.
+2. On **Alt** keydown, reveal compact blue keytip badges on the primary controls.
+3. On **Alt + key**, either:
+   - focus/open a compound control (for example font family, font size, line spacing), or
+   - immediately fire a button action (for example Bold, Align Left, Indent).
+4. Preserve arrow-key roving between toolbar buttons once one of them has focus.
+5. Keep visible help text near the editor so writers learn the split:
+   - **Alt** reaches the toolbar
+   - **Tab / Shift+Tab** edits indentation inside the document
+
+### Monoscape reference
+
+- `packages/ui/src/FormattingToolbar.tsx`
+- `packages/ui/src/TextEditor.tsx`
+- `packages/document-core/src/index.ts`
+
+## Reviewer Override: Alt Keytip Model
+
+If product explicitly changes the keyboard contract so plain Tab must **skip** the toolbar entirely, treat this as a different pattern, not a small tweak to roving tabindex.
+
+### Gate
+
+- Plain Tab / Shift+Tab must never land on toolbar buttons
+- Holding Alt must reveal visible keytips on toolbar targets
+- Alt+key must focus or activate the mapped target
+- Keytips must dismiss on Alt release, Escape, blur, or successful activation
+- Tests must prove the new model directly; old “Tab escapes toolbar/editor” tests are no longer sufficient
+
+### Reject If
+
+- Toolbar still depends on roving tabindex as the primary keyboard entry path
+- Alt behavior is only described in `title`, `aria-keyshortcuts`, or helper text
+- Reviewer only sees mouse evidence, not keyboard evidence
+- Editor indentation shortcuts and toolbar access rules contradict each other
+
 ## Author
 
 **Oracle** (Accessibility & UX)  
