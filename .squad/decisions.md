@@ -1150,6 +1150,46 @@ If we later add export/import or OT/CRDT document modeling, preserve inline typo
 
 ---
 
+### 25. Morpheus: Formatting Gate Revision — Mixed-Selection Explicit Sentinel
+
+**Date:** 2026-04-21  
+**Author:** Morpheus  
+**Status:** ✅ APPROVED — Ready for Merge
+
+Represent heterogeneous editor selections in toolbar-facing value controls with an explicit mixed sentinel (`null`) and render that state as `Mixed`, rather than leaking the selection-start value through the contract.
+
+**Why:**
+
+The previous contract let `TextEditor` pass a single concrete font family, font size, alignment, or line spacing even when the selected DOM contained multiple values. That made the toolbar lie about the actual selection and weakened reviewer confidence around formatting safety.
+
+**Applied In:**
+
+- `packages/document-core/src/index.ts` — `MIXED_FORMATTING_LABEL`, `resolveUniformValue()` exports
+- `packages/ui/src/TextEditor.tsx` — Mixed font family/size/alignment/line spacing derivation from live selection
+- `packages/ui/src/FormattingToolbar.tsx` — Explicit `Mixed` state rendering
+- `packages/ui/src/TextEditor.test.tsx` — Mixed typography integrity, undo/redo, copy/paste, keyboard flow
+
+**Validation:**
+
+- ✅ `npm run validate` PASS
+- ✅ `npm run build` PASS
+- ✅ Mixed-selection toolbar state verified
+- ✅ Keyboard-safe indent/outdent confirmed
+- ✅ Font deletion span rewrite tested
+- ✅ All regression tests (16+) passed
+
+**Key Behaviors:**
+
+- ✅ Mixed selection shows `Mixed` UI (not selection-start value)
+- ✅ Tab/Shift+Tab indent/outdent without focus trap
+- ✅ Deleted fonts rewritten in existing spans to fallback value
+- ✅ Toolbar never lies about heterogeneous typography
+- ✅ WCAG 2.2 AA accessibility verified
+
+**Verdict:** APPROVED FOR MERGE. All acceptance criteria met. No blockers.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

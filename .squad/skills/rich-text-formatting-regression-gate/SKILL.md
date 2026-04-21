@@ -44,6 +44,17 @@ Reject if any of these are missing:
 6. Trigger any deletion/fallback path and inspect old + new content
 7. Verify keyboard-only flow in both toolbar and editor contexts
 
+## Stronger Repo-Level Proof
+
+When the stack cannot do full browser E2E yet, add the closest editor-surface tests you can:
+
+- mount the shared editor in jsdom
+- create live `Range` selections across heterogeneous spans/blocks
+- assert toolbar value controls fall back to `Mixed` instead of a concrete lie
+- commit one formatting change from the toolbar and verify only the targeted property becomes uniform
+- assert editor `keydown` handling does **not** swallow browser-native undo/redo/copy/paste shortcuts
+- assert raw `Tab` still escapes the editor while dedicated indent shortcuts keep working
+
 ## Monoscape Reference
 
 - `packages/ui/src/FormattingToolbar.tsx`
