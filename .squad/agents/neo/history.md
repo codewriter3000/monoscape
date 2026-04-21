@@ -17,3 +17,7 @@
 - Added thin client shells at `apps/desktop`, `apps/mobile`, and `apps/web`; web is a preview surface while desktop/mobile remain runtime-agnostic until native container choices are validated.
 - Created built-in extension packages at `extensions/builtin/citations` and `extensions/builtin/review` so extension discovery and installation can evolve around one package shape.
 - Root developer foundation now lives in `package.json`, `tsconfig.base.json`, `README.md`, and `LICENSE`.
+- **[2026-04-21] Scribe Session:** Layout review reconciliation complete. Trinity's implementation plan (centered canvas, desktop TextEditor integration) and Oracle's accessibility findings (focus escape blocker, styling defaults) all merged to .squad/decisions.md (Decisions #1–7). Desktop app TextEditor integration decision logged (Decision #7). Team ready for implementation.
+- Cross-app drafting layout belongs in `packages/ui/src/index.tsx` via `MonoscapeShell`; app shells should pass content, not re-implement canvas framing.
+- Shared editor chrome belongs in `packages/ui/src/TextEditor.tsx` and `packages/ui/src/FormattingToolbar.tsx`, with typography sourced from `packages/document-core/src/index.ts`.
+- `apps/web/src/App.tsx` and `apps/desktop/src/App.tsx` now both consume the shared editor surface, keeping platform shells thin and the microkernel boundary intact.
