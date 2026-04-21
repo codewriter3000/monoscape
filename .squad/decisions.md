@@ -242,6 +242,99 @@ Desktop app must integrate TextEditor component to match web app. Current state:
 
 ---
 
+### 8. Runtime Architecture Split — Web Canonical, Capacitor Android, Tauri Desktop
+
+**Date:** 2026-04-21  
+**Author:** Neo  
+**Status:** Active Decision — Implementation Pending
+
+Adopt a split runtime strategy:
+
+1. **Web:** `apps/web` as the canonical browser execution surface
+2. **Mobile:** Capacitor for `apps/mobile` starting with Android
+3. **Desktop:** Tauri for `apps/desktop` (not Capacitor)
+
+**Why:** The microkernel architecture supports webview-backed native shells while preserving clean boundaries. Web is the shared UI surface; mobile and desktop use thin shells with platform-specific concerns kept local (Android emulator at `Pixel_9a.avd`, Tauri native windowing).
+
+**Implementation:** Vite dev/build pipeline in `apps/web`; Capacitor Android shell in `apps/mobile` with `webDir` → `apps/web/dist`; Tauri shell in `apps/desktop` with dev path to Vite server and dist to `apps/web/dist`.
+
+**Consequences:** One shared UI stack, three execution environments. Editor behavior and extension contracts remain in shared packages; native bridges optional and capability-based.
+
+---
+
+### 9. Runtime Execution Acceptance Gate — Three Tiers with Regression Tests
+
+**Date:** 2026-04-21  
+**Author:** Switch  
+**Status:** Active Guidance — Implementation Gate
+
+Define acceptance criteria for web (MVP), desktop (high-priority), and mobile (optional) runtime tiers.
+
+**Tier 1: Web (MVP)** — Must have:
+- Vite bundler + SolidJS; `npm run dev:web` → localhost:5173
+- `npm run build:web` → `apps/web/dist/` with bundled assets
+- TextEditor, FormattingToolbar, MonoscapeShell render and accept input
+- Extension slots functional; no console errors
+- Keyboard navigation verified (arrow keys, focus escape)
+
+**Tier 2: Desktop (High Priority)** — Must have:
+- Desktop shell choice (Electron or Tauri); `npm run dev:desktop` → native window
+- TextEditor renders and accepts input; toolbar keyboard nav works
+- OS shortcuts don't conflict; extension system boots
+
+**Tier 3: Mobile (Optional for MVP)** — Must have:
+- Capacitor + web build; `npm run emulate:android` → Pixel_9a.avd launches app
+- TextEditor functional; touch targets ≥ 44×44 CSS pixels
+- Soft keyboard doesn't obscure editor; extensions boot
+
+**Cross-Platform Regression Tests (All Tiers):**
+- Editor functional: type text, bold/italic/underline, toolbar state syncs
+- WCAG 2.2 AA compliance: screen reader announces roles/labels, focus visible, contrast ≥ 4.5:1 text
+- Extension system: bootstrap loads extensions, manifests parse, slots render
+- Typography: 12pt Liberation Serif with 1.5 line height applied; fallback works
+- Performance: load < 2s (web) / < 1s (desktop/mobile); memory < 100MB (desktop) / < 50MB (mobile)
+
+**Recommendation:** Start with web + desktop; ship MVP with those two. Mobile can follow after proving architecture.
+
+---
+
+### 10. Runtime Implementation — Vite Web, Capacitor Android, Tauri Desktop
+
+**Date:** 2026-04-21  
+**Author:** Morpheus  
+**Status:** Implementation Complete — Ready for Entrypoint Wiring
+
+Implemented Neo's runtime split by wiring shared SolidJS UI through canonical web build (Vite), Capacitor Android shell, and Tauri desktop shell.
+
+**Changes:**
+- `apps/web` now owns Vite dev/build pipeline; single shared UI surface
+- `apps/mobile` uses Capacitor with `webDir` → `apps/web/dist`; Android scripts launch Pixel_9a AVD
+- `apps/desktop` uses Tauri with `devPath` pointing at Vite server, `distDir` at `apps/web/dist`
+- Updated `package.json` scripts and README with execution commands
+- Validated web build and Android sync against Pixel_9a.avd
+
+**Consequences:** Clean separation between web build artifact and mobile/desktop shells that consume it. Platform bootstrap concerns kept local to each shell.
+
+---
+
+### 11. Runtime Entry Surfaces — Thin Entrypoints with Shared Editor
+
+**Date:** 2026-04-21  
+**Author:** Trinity  
+**Status:** Guidance — Entrypoint Wiring Complete
+
+Keep each client's runtime boot glue inside its own app shell while mounting the same shared editor surface from `packages/ui`.
+
+**Architecture:**
+- `apps/web` — canonical browser entry with Vite + SolidJS renderer bootstrap
+- `apps/mobile` — HTML entry + Vite build + Capacitor Android wiring + safe-area padding
+- `apps/desktop` — HTML entry + Vite build + Tauri window bootstrap
+- Shared editor surface from `packages/ui` mounted in all three
+
+**Why:** Editor stays consistent across platforms; runtime-specific concerns (safe-area padding, emulator startup, native windowing) stay local to the shell that owns them. Capacitor fits Android; desktop stays on Tauri rather than stretching mobile tooling.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
