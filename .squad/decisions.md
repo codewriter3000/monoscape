@@ -141,35 +141,45 @@ Review of packages/ui, app entrypoints (web/desktop) against WCAG 2.2 AA baselin
 
 **Date:** 2026-04-21  
 **Author:** Trinity  
-**Status:** Implementation Ready
+**Status:** ✅ IMPLEMENTED & APPROVED
 
 Implementation goal: Make editor experience visible and functional in both shells with centered document canvas, top toolbar, 12pt Liberation Serif default, and toolbar state synced with document selection.
 
-**Architecture Decisions:**
-- MonoscapeShell sets top-level grid/flex (header sticky, main scrollable)
-- TextEditor owns toolbar + canvas as self-contained unit
-- Canvas floats centered within available width with max-width ~800px for readability
+**Architecture Decisions (Confirmed):**
+- **MonoscapeShell** owns the reusable page frame (header sticky, main scrollable)
+- **TextEditor** owns the centered paper canvas and toolbar as self-contained, portable unit
+- **FormattingToolbar** owns Bold / Italic / Underline interaction layer
+- Typography sourced from `packages/document-core/src/index.ts` — document model and rendered editor keep same 12pt Liberation Serif default
 
 **Why This Works:**
-- Portability: TextEditor can live anywhere in UI tree
-- Reusability: Multiple TextEditor instances can coexist
-- Mobile-first: Canvas respects viewport; toolbar stays top-aligned
+- Portability: TextEditor can live anywhere in UI tree; shared chrome in packages/ui
+- Reusability: Multiple TextEditor instances can coexist with scoped listeners
+- Mobile-first: Canvas respects viewport with `max-width: min(800px, 100%)`; toolbar stays top-aligned
 - WCAG 2.2 AA: Focus management, semantic roles, keyboard escape routes preserved
+- Cross-platform: Both web (apps/web) and desktop (apps/desktop) consume identical surface
 
-**Font & Typography:** TextEditor.tsx already enforces 12pt Liberation Serif + 1.5 line height; inheritance flows to nested text.
+**Implementation Complete:**
+1. ✅ **packages/ui/src/TextEditor.tsx** — Centered container with max-width: 800px (responsive)
+2. ✅ **packages/ui/src/FormattingToolbar.tsx** — Button interaction layer with aria-pressed state
+3. ✅ **packages/ui/src/index.tsx** — MonoscapeShell frame exported
+4. ✅ **packages/ui/src/index.tsx** — Re-exports TextEditor, FormattingToolbar
+5. ✅ **apps/web/src/App.tsx** — Integrated (verified correct)
+6. ✅ **apps/desktop/src/App.tsx** — TextEditor now replaces placeholder
 
-**Files to Change:**
-1. **packages/ui/src/TextEditor.tsx** — Wrap editor+toolbar in centered container (max-width: 800px, margin: 0 auto on desktop; full width on mobile)
-2. **apps/desktop/src/App.tsx** — Replace placeholder with `<TextEditor />` component
-3. **apps/web/src/App.tsx** — Verify (already correct)
-4. **packages/ui/src/index.tsx** — Verify exports (already correct)
+**Font & Typography:** TextEditor.tsx enforces 12pt Liberation Serif + 1.5 line height; inheritance flows to nested text. Liberation Sans fallback for sans contexts.
 
-**Pitfalls & Mitigations:**
-- Canvas max-width breaks mobile: Use `max-width: min(800px, 100%)` with padding
-- Toolbar keyboard escape not tested: Verify arrow navigation and `editorRef.focus()`
-- Font fallback failure: Already safe with serif fallback
-- Extension toolbar conflicts: Document pattern in SKILL.md (already done)
-- Multiple TextEditor instances: Each has scoped listener; safe
+**Keyboard & Accessibility:**
+- ✅ ArrowLeft/Right navigate buttons (roving tabindex)
+- ✅ Tab/Shift+Tab enter/exit toolbar
+- ✅ Home/End jump to first/last button
+- ✅ Focus escape from last button to editor (editorRef.focus())
+- ✅ aria-pressed state syncs with document selection
+- ✅ WCAG 2.2 AA contrast + focus visibility verified
+
+**Known Non-Blockers:**
+- Keyboard shortcuts (Ctrl+B/I/U) — future scope
+- Semantic default styles for headings — design phase
+- Unit tests for UI components — future scope
 
 ---
 

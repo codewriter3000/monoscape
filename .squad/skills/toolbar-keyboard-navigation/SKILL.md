@@ -38,6 +38,7 @@ Students under deadline pressure benefit from predictable, low-friction keyboard
    - ArrowRight/ArrowLeft preventDefault and cycle focus
    - **Critical:** After the last button (right arrow), move focus to the next element (e.g., editor)
    - After the first button (left arrow), wrap to the last button (or escape to previous element)
+   - Reset toggle state visuals when the document selection moves outside the active editor
 
 4. **Event Listeners:**
    - Listen for `selectionchange` to update button state (bold/italic applied)
@@ -153,6 +154,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
 - [ ] Keyboard user: ArrowRight/Left cycles through all buttons
 - [ ] Keyboard user: ArrowRight from last button moves focus to editor
 - [ ] Keyboard user: Tab from toolbar moves to next element (not back to first button)
+- [ ] Selection outside the editor resets toolbar pressed states
 - [ ] Screen reader: Button announced as "Bold, toggle button, pressed" or "unpressed"
 - [ ] Mouse: Click button, focus returns to toolbar (user can continue with arrows)
 - [ ] Zoom 200%: Focus outline remains visible and clickable

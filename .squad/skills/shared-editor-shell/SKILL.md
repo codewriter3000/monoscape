@@ -22,6 +22,8 @@ Use this when a feature needs a page frame, toolbar, or document canvas that sho
 - Put formatting controls in `packages/ui/src/FormattingToolbar.tsx`.
 - Source typography defaults from `packages/document-core/src/index.ts` so the editor and document model do not drift.
 - Let `apps/web` and `apps/desktop` compose the shared UI rather than restyling it independently.
+- Use a responsive shell grid that keeps the canvas centered on wide screens and collapses side content underneath the editor on narrower widths.
+- Treat the document as a paper card inside a quieter frame so the editing target stays visually dominant without forcing app-specific CSS.
 
 ## Anti-Patterns
 - Building a browser-only toolbar directly in `apps/web`.
@@ -32,3 +34,4 @@ Use this when a feature needs a page frame, toolbar, or document canvas that sho
 - `packages/ui/src/index.tsx` centers the main canvas and wraps secondary content in a shared shell card.
 - `packages/ui/src/TextEditor.tsx` renders a paper-like canvas with the shared 12pt Liberation Serif baseline.
 - `apps/web/src/App.tsx` and `apps/desktop/src/App.tsx` both pass `TextEditor` into `MonoscapeShell` instead of maintaining separate editor layouts.
+- `packages/ui/src/TextEditor.tsx` uses an empty-state placeholder plus responsive padding so the centered canvas still feels usable on laptop and mobile-width previews.
