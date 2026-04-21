@@ -30,7 +30,7 @@ Naive indentation approaches break fast:
 4. Apply indentation from the bottom upward so earlier DOM positions stay valid:
    - **Indent:** insert a leading `\\t` at each selected line start
    - **Outdent:** remove one leading `\\t` when present
-5. Trigger that logic from toolbar buttons and modifier shortcuts (for example `Ctrl+]` / `Ctrl+[`) instead of raw `Tab`, and expose the keyboard escape path in visible help text or `aria-describedby`.
+5. If product keeps raw `Tab` / `Shift+Tab` for indentation, pair it with an explicit keyboard exit such as `Escape` moving focus to a known toolbar control; otherwise trigger indentation from toolbar buttons and modifier shortcuts (for example `Ctrl+]` / `Ctrl+[`). In both cases, expose the escape rule in visible help text or `aria-describedby`.
 6. Rebuild the plain-text model and restore the selection by text indices so the user keeps the same logical selection after the DOM mutation.
 
 ## Why This Works
@@ -38,11 +38,13 @@ Naive indentation approaches break fast:
 - Preserves inline spans created by mixed typography formatting
 - Treats partial-line selections as whole-line operations
 - Keeps indentation available without breaking WCAG keyboard escape expectations
+- Makes the escape path deterministic enough to prove in jsdom regression tests
 
 ## Monoscape Reference
 
 - `packages/ui/src/TextEditor.tsx`
 - `packages/ui/src/FormattingToolbar.tsx`
+- `packages/ui/src/TextEditor.test.tsx`
 
 ## Validation
 

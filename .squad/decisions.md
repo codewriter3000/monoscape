@@ -1301,6 +1301,36 @@ Monoscape's top-level formatting toolbar is no longer part of the plain Tab sequ
 
 ---
 
+### 35. Neo — Keytip Trap Revision
+
+**Date:** 2026-04-21  
+**Author:** Neo  
+**Status:** Decision — Product Model Approved
+
+## Decision
+
+Keep `Tab` / `Shift+Tab` line indentation inside the shared `contentEditable` editor, but make `Escape` the explicit keyboard exit from the editor back to the toolbar. Preserve the existing Alt keytip model for entering or activating toolbar controls without restoring the toolbar to the plain Tab order.
+
+## Why
+
+- Switch's rejection was correct: editor-owned Tab needs a proven escape path, not just helper text.
+- Oracle's accessibility constraint still applies: the keyboard model cannot create a trap.
+- Focusing the toolbar's primary control on `Escape` keeps the editor fast for writers while giving keyboard users a deterministic way out before continuing navigation.
+
+## Implementation Shape
+
+- `packages/ui/src/FormattingToolbar.tsx` registers its primary focus target with the parent editor.
+- `packages/ui/src/TextEditor.tsx` intercepts `Escape` and moves focus to that toolbar target, while leaving Alt keytips unchanged.
+- `packages/ui/src/TextEditor.test.tsx` proves both the Escape-to-toolbar path and the partial-line-selection whole-line indent/outdent behavior.
+
+## Reviewer Proof
+
+- `Tab` still indents and `Shift+Tab` still outdents selected lines.
+- `Escape` moves focus out of the editor and onto the toolbar.
+- Alt keytips still reveal and activate toolbar actions.
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
