@@ -1514,10 +1514,74 @@ Fixed Trinity's rejected artifacts:
 
 ### 35. Copilot Directive — 250-Line File Limit
 
-**Date:** 2026-05-02T09:52:00Z  
-**By:** Alex Micharski  
+**Date:** 2026-05-02T09:52:00Z
+**By:** Alex Micharski
 **Status:** Team Memory
 
 Apply 250-line file limit and 15-entry directory limit to maintainable source files and app/package directories only, not generated files, lockfiles, or .squad docs/state.
+
+---
+
+### 36. Trinity — Font UI Rollback
+
+**Date:** 2026-05-02T16:03:18Z
+**Author:** Trinity
+**Status:** Complete — Approved for merge
+
+Restored the richer font-family picker with current-font context, category filtering, searchable results, and add/remove font actions. Kept the compact control treatment limited to font size and line spacing inputs.
+
+**Rationale:** Dense numeric controls benefit from compact combos, but font-family browsing needs more context and affordances to stay fast, recognizable, and keyboard-safe for daily writing.
+
+**Evidence:**
+- `packages/ui/src/toolbar/components/FontPickerDropdown.tsx` — richer picker with search
+- `packages/ui/src/editor/__tests__/typography.test.tsx` — regression coverage validated
+
+---
+
+### 37. Morpheus — Formatting Persistence
+
+**Date:** 2026-05-02T16:03:18Z
+**Author:** Morpheus
+**Status:** Complete — Approved for merge
+
+Fixed the collapsed-caret formatting persistence bug: pending typography now commits to a real text insertion point inside the typing span so the first typed character inherits the requested formatting. Academic style presets (APA/MLA) swapped from Times New Roman to Liberation Serif.
+
+**Changes:**
+- Collapsed-caret fix: Zero-width insertion point replaces pending typing marker
+- Academic presets: APA v7 + MLA now reference Liberation Serif for consistency
+
+**Evidence:**
+- `packages/ui/src/editor/TextEditor.tsx:58-67` — caret persistence anchor
+- `packages/document-core/src/academic-styles.ts:27-132` — style preset definitions
+- `packages/document-core/src/index.test.ts:130-133` — regression lock
+
+---
+
+### 38. Switch — Font UI Follow-up Review
+
+**Date:** 2026-05-02T16:03:18Z
+**Author:** Switch
+**Status:** Approved for merge
+
+**Verdict:** APPROVED FOR MERGE
+
+All three subsystems verified and passing:
+1. Font-family UI restored to richer picker with search, categorization, add-font entry point
+2. Collapsed-caret formatting persists when typing resumes
+3. Academic style presets (APA/MLA) use Liberation Serif
+
+**Regression Matrix (0 HIGH, 0 MEDIUM):**
+- ✅ Font picker expand/collapse
+- ✅ Search + categorization
+- ✅ Mixed-typography caret persistence
+- ✅ Undo/redo integration
+- ✅ Copy/paste mixed runs
+- ✅ Keyboard navigation
+- ✅ WCAG 2.2 AA accessibility
+
+**Validation:**
+- ✅ `npm test`
+- ✅ `npm run typecheck`
+- ✅ `npm run build`
 
 ---
