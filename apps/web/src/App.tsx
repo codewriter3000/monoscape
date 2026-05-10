@@ -27,13 +27,21 @@ export function App() {
       subtitle="Shared UI preview for the editor kernel and extension system."
       primary={<TextEditor />}
       secondary={
-        <ul>
-          {defaultWorkflowTemplates.map((template) => (
-            <li>{template.label}</li>
-          ))}
-        </ul>
+        <>
+          <p style="margin:0 0 12px;font-weight:600;color:#172033;">Workflow templates</p>
+          <ul style="margin:0;padding-left:18px;color:#52607a;">
+            {defaultWorkflowTemplates.map((template) => (
+              <li>{template.label}</li>
+            ))}
+          </ul>
+        </>
       }
-      utilities={<p>Use the web shell to smoke-test shared UI without anchoring the architecture to the browser.</p>}
+      utilities={
+        <p style="margin:0;">
+          Previewing {seed.title} with {webBootstrapPlan.extensionQueue.length} extensions staged. Keep
+          browser-specific behavior out of the editor surface so desktop and mobile can reuse the same chrome.
+        </p>
+      }
     />
   );
 }

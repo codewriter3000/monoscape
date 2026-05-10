@@ -1,0 +1,17 @@
+{
+  "name": "@monoscape/extension-sdk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node -e \"console.log('No tests yet for @monoscape/extension-sdk')\""
+  },
+  "dependencies": {
+    "@monoscape/kernel": "file:../kernel"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

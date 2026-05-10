@@ -1,0 +1,32 @@
+{
+  "name": "monoscape",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Monoscape monorepo scaffold for a SolidJS-based microkernel word processor.",
+  "license": "MIT",
+  "packageManager": "npm@11.12.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "extensions/builtin/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:desktop": "npm --workspace @monoscape/app-desktop run tauri:build",
+    "build:mobile": "npm --workspace @monoscape/app-mobile run build",
+    "build:web": "npm --workspace @monoscape/app-web run build",
+    "dev:desktop": "npm --workspace @monoscape/app-desktop run tauri:dev",
+    "dev:mobile": "npm --workspace @monoscape/app-mobile run android:run",
+    "dev:web": "npm --workspace @monoscape/app-web run dev",
+    "android:emulator": "npm --workspace @monoscape/app-mobile run android:emulator",
+    "android:emulator:high": "npm --workspace @monoscape/app-mobile run android:emulator:high",
+    "android:prepare": "npm --workspace @monoscape/app-mobile run android:prepare",
+    "android:run": "npm --workspace @monoscape/app-mobile run android:run",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "validate": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

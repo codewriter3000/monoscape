@@ -1,0 +1,39 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev -- --host 0.0.0.0 --port 1420",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "Monoscape",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "window": {
+        "all": true
+      }
+    },
+    "windows": [
+      {
+        "title": "Monoscape",
+        "center": true,
+        "width": 1440,
+        "height": 960,
+        "minWidth": 1100,
+        "minHeight": 720,
+        "decorations": false
+      }
+    ],
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.monoscape.app",
+      "icon": [
+        "icons/icon.ico",
+        "icons/icon.png"
+      ]
+    }
+  }
+}
