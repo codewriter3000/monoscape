@@ -1,7 +1,6 @@
 // Inline formatting buttons (Bold, Italic, Underline, etc.)
 
 import { For, Show } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
 import { inlineFormattingActions } from "../constants";
 import type { FormattingState } from "@monoscape/document-core";
 import type { InlineFormattingId } from "../constants";
@@ -16,10 +15,8 @@ interface InlineFormatButtonsProps {
 }
 
 export function InlineFormatButtons(props: InlineFormatButtonsProps) {
-  function getButtonStyle(actionId: keyof FormattingState) {
-    const base = TOOLBAR_STYLES.button;
-    const active = props.state[actionId] ? TOOLBAR_STYLES.buttonActive : "";
-    return base + active;
+  function getButtonClass(actionId: keyof FormattingState) {
+    return "toolbar__button" + (props.state[actionId] ? " toolbar__button--active" : "");
   }
 
   return (
@@ -37,7 +34,7 @@ export function InlineFormatButtons(props: InlineFormatButtonsProps) {
               aria-keyshortcuts={action.ariaShortcut}
               title={`${action.label} (${action.shortcut})`}
               tabIndex={-1}
-              style={getButtonStyle(action.id as keyof FormattingState)}
+              class={getButtonClass(action.id as keyof FormattingState)}
               onClick={() => props.onFormat(action.command)}
               onKeyDown={props.onButtonKeyDown}
             >

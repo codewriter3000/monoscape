@@ -1,9 +1,8 @@
 import { Show, createEffect, createSignal, type JSX } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
-import { ColorFormatInputs } from "./ColorFormatInputs";
-import { ColorPickerVisual } from "./ColorPickerVisual";
 import { normalizeToolbarColor } from "./colorUtils";
-import { normalizeColor, getContrastRatio, formatColorForCss, type NormalizedColor, type ColorModel, type ColorPickerMode } from "@monoscape/document-core";
+import { clampNum, formatColorByModel, parseColorByModel } from "./pickers/colorPickerUtils";
+import { ColorPickerPanel } from "./pickers/ColorPickerPanel";
+import { normalizeColor, hexToRgba, getContrastRatio, formatColorForCss, type NormalizedColor, type ColorModel, type ColorPickerMode } from "@monoscape/document-core";
 interface ColorPickerDropdownProps {
   value: NormalizedColor | null;
   isOpen: boolean;
@@ -16,12 +15,20 @@ interface ColorPickerDropdownProps {
 }
 
 export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
-  const [model, setModel] = createSignal<ColorModel>("rgba");
+  const [model, setModel] = createSignal<ColorModel>("hex");
   const [pickerMode, setPickerMode] = createSignal<ColorPickerMode>("input");
+  const [colorDraft, setColorDraft] = createSignal("");
+  const [isHovered, setIsHovered] = createSignal(false);
+  const [isFocused, setIsFocused] = createSignal(false);
   let triggerRef: HTMLButtonElement | undefined;
+  let hexInputRef: HTMLInputElement | undefined;
   let panelRef: HTMLDivElement | undefined;
   const defaultColor = normalizeColor({ r: 0, g: 0, b: 0, a: 1 })!;
-  const currentColor = () => normalizeToolbarColor(props.value) ?? defaultColor;
+
+  // Internal working color — syncs from props.value only when panel opens,
+  // then tracks user interactions independently so outside-click doesn't reset it.
+  const [activeColor, setActiveColor] = createSignal<NormalizedColor | null>(null);
+  const currentColor = () => activeColor() ?? normalizeToolbarColor(props.value) ?? defaultColor;
 
   const backgroundColor = { r: 255, g: 255, b: 255, a: 1 };
   const contrastRatio = () => getContrastRatio(currentColor().rgba, backgroundColor);
@@ -60,15 +67,66 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
       triggerRef?.focus();
       return;
     }
+    // Enter is intentionally NOT intercepted here — buttons/inputs inside the panel
+    // handle their own Enter activation. Intercepting it here would swallow button
+    // clicks triggered by keyboard Enter via event bubbling.
+  }
 
+  const isActive = () => isFocused() || props.isOpen;
+  const borderColor = () => {
+    if (isActive()) return "#005fcc";
+    if (isHovered()) return "#8a90a0";
+    return "#c3cad8";
+  };
+
+  // Sync active color from props when the panel opens (so stale internal state is refreshed).
+  createEffect(() => {
+    if (props.isOpen) {
+      setActiveColor(normalizeToolbarColor(props.value));
+    }
+  });
+
+  // Keep draft in sync with currentColor + model (reactive to both).
+  createEffect(() => {
+    setColorDraft(formatColorByModel(currentColor(), model()));
+  });
+
+  function commitColor(value: string) {
+    const parsed = parseColorByModel(value, model());
+    if (parsed) {
+      setActiveColor(parsed);
+      props.onChange(parsed);
+    } else {
+      // Revert draft to the current committed color
+      setColorDraft(formatColorByModel(currentColor(), model()));
+    }
+  }
+
+  function handleHexKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
+      commitColor(colorDraft());
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
       props.onOpenChange(false);
-      triggerRef?.focus();
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      commitColor(colorDraft());
+      props.onNavigateOut?.(event.shiftKey ? "prev" : "next");
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      props.onOpenChange(true);
     }
   }
 
   function handleColorChange(color: NormalizedColor) {
+    setActiveColor(color);
     props.onChange(color);
   }
 
@@ -79,12 +137,6 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
   function selectPickerMode(mode: ColorPickerMode) {
     setPickerMode(mode);
   }
-
-  const triggerStyle = `
-    ${TOOLBAR_STYLES.compactTrigger}
-    width: 100px;
-    justify-content: space-between;
-  `;
 
   const swatchStyle = (color: NormalizedColor | null) => {
     const normalized = normalizeToolbarColor(color);
@@ -98,28 +150,6 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
   `;
   };
 
-  const modeButtonStyle = (active: boolean) => `
-    padding: 4px 8px;
-    border: 1px solid ${active ? "#005fcc" : "#c3cad8"};
-    background: ${active ? "#dce8ff" : "#ffffff"};
-    color: ${active ? "#005fcc" : "#172033"};
-    font-size: 0.75rem;
-    font-weight: ${active ? "600" : "400"};
-    cursor: pointer;
-    border-radius: 4px;
-    outline: none;
-  `;
-
-  const pickerModeButtonStyle = (active: boolean) => `
-    padding: 6px 12px;
-    border: 1px solid ${active ? "#005fcc" : "#c3cad8"};
-    background: ${active ? "#dce8ff" : "#ffffff"};
-    color: ${active ? "#005fcc" : "#172033"};
-    font-size: 0.75rem;
-    font-weight: ${active ? "600" : "400"};
-    cursor: pointer;
-    outline: none;
-  `;
 
   createEffect(() => {
     if (props.isOpen) {
@@ -128,143 +158,68 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
   });
 
   return (
-    <div ref={props.containerRef} style="position: relative; display: inline-flex;">
-      <button
-        ref={(el) => {
-          triggerRef = el;
-          props.triggerRef?.(el);
-        }}
-        aria-label="Font color"
-        aria-controls="monoscape-color-panel"
-        aria-expanded={props.isOpen}
-        tabIndex={-1}
-        style={triggerStyle}
-        onClick={() => props.onOpenChange(!props.isOpen)}
-        onKeyDown={handleTriggerKeyDown}
+    <div ref={props.containerRef} style="position: relative; display: inline-flex; flex-direction: column; align-items: flex-start;">
+      <div
+        style="position: relative; display: flex;"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onFocusIn={() => setIsFocused(true)}
+        onFocusOut={() => setIsFocused(false)}
       >
-        <span style="font-size: 0.875rem;">Color</span>
-        <div style={swatchStyle(normalizeToolbarColor(props.value))} />
-        {props.renderKeytip?.()}
-      </button>
+        <div
+          style={`display:flex;align-items:stretch;border:1px solid ${borderColor()};border-radius:12px;overflow:hidden;box-shadow:${isActive() ? "0 0 0 2px rgba(0,95,204,0.2)" : "none"};transition:border-color 0.15s,box-shadow 0.15s;`}
+        >
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 12px;background:#f7f9fc;min-width:0;width:100px;">
+            <span style="font-weight:700;font-size:0.65rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">Color</span>
+            <input
+              ref={(el) => { hexInputRef = el; }}
+              type="text"
+              value={colorDraft()}
+              placeholder={model() === "hex" ? "#000000" : model() === "rgba" ? "255, 0, 0" : "0, 100, 50"}
+              aria-label={`Font color (${model().toUpperCase()})`}
+              aria-controls="monoscape-color-panel"
+              aria-expanded={props.isOpen}
+              tabIndex={-1}
+              style="border:none;background:transparent;color:#172033;font:inherit;min-width:0;width:100%;outline:none;padding:0;line-height:1.4;"
+              onFocus={() => props.onOpenChange(true)}
+              onInput={(e) => setColorDraft(e.currentTarget.value)}
+              onBlur={(e) => commitColor(e.currentTarget.value)}
+              onKeyDown={handleHexKeyDown}
+            />
+          </div>
+          <button
+            ref={(el) => {
+              triggerRef = el;
+              props.triggerRef?.(el);
+            }}
+            type="button"
+            aria-label="Open color picker"
+            tabIndex={-1}
+            style={`display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;min-height:42px;align-self:stretch;border:none;border-left:1px solid ${borderColor()};background:#f7f9fc;color:#52607a;font:inherit;cursor:pointer;transition:background 0.15s,border-color 0.15s;`}
+            onClick={() => props.onOpenChange(!props.isOpen)}
+            onKeyDown={handleTriggerKeyDown}
+          >
+            <div style={swatchStyle(currentColor())} />
+            <span style={`display:inline-block;transition:transform 0.2s ease;transform:rotate(${props.isOpen ? "180" : "0"}deg);line-height:1;font-size:1rem;`}>▾</span>
+            {props.renderKeytip?.()}
+          </button>
+        </div>
+      </div>
 
       <Show when={props.isOpen}>
-        <div
-          role="dialog"
-          aria-label="Color picker"
-          id="monoscape-color-panel"
-          ref={(el) => {
-            panelRef = el;
-          }}
-          data-color-picker-panel="true"
-          data-color-picker-mode={pickerMode()}
-          style={TOOLBAR_STYLES.dropdownPanel + "width: 320px; max-height: 480px;"}
+        <ColorPickerPanel
+          model={model()}
+          pickerMode={pickerMode()}
+          currentColor={currentColor()}
+          contrastRatio={contrastRatio()}
+          meetsWCAGAA={meetsWCAGAA()}
+          swatchStyle={swatchStyle}
+          onModelChange={selectMode}
+          onPickerModeChange={selectPickerMode}
+          onChange={handleColorChange}
           onKeyDown={handlePanelKeyDown}
-        >
-          {/* Mode switcher: RGBA / HSL / HSV / HEX */}
-          <div style="display: flex; gap: 4px; margin-bottom: 12px; padding: 8px 8px 0;">
-            <button
-              type="button"
-              style={modeButtonStyle(model() === "rgba")}
-              onClick={() => selectMode("rgba")}
-            >
-              RGBA
-            </button>
-            <button
-              type="button"
-              style={modeButtonStyle(model() === "hsl")}
-              onClick={() => selectMode("hsl")}
-            >
-              HSL
-            </button>
-            <button
-              type="button"
-              style={modeButtonStyle(model() === "hsv")}
-              onClick={() => selectMode("hsv")}
-            >
-              HSV
-            </button>
-            <button
-              type="button"
-              style={modeButtonStyle(model() === "hex")}
-              onClick={() => selectMode("hex")}
-            >
-              HEX
-            </button>
-          </div>
-
-          {/* Picker mode switcher: Wheel / Pyramid / Input */}
-          <div style="display: flex; gap: 0; margin-bottom: 12px; padding: 0 8px;">
-            <button
-              type="button"
-              data-picker-mode="wheel"
-              style={pickerModeButtonStyle(pickerMode() === "wheel") + "border-top-right-radius: 0; border-bottom-right-radius: 0;"}
-              onClick={() => selectPickerMode("wheel")}
-            >
-              Wheel
-            </button>
-            <button
-              type="button"
-              data-picker-mode="pyramid"
-              style={pickerModeButtonStyle(pickerMode() === "pyramid") + "border-radius: 0; border-left: none;"}
-              onClick={() => selectPickerMode("pyramid")}
-            >
-              Pyramid
-            </button>
-            <button
-              type="button"
-              data-picker-mode="input"
-              style={pickerModeButtonStyle(pickerMode() === "input") + "border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none;"}
-              onClick={() => selectPickerMode("input")}
-            >
-              Input
-            </button>
-          </div>
-
-          <Show when={pickerMode() === "wheel" || pickerMode() === "pyramid"}>
-            <div style="padding: 8px 8px 0;">
-              <ColorPickerVisual
-                mode={pickerMode() as Exclude<ColorPickerMode, "input">}
-                color={currentColor()}
-                onChange={handleColorChange}
-              />
-            </div>
-          </Show>
-
-          {/* Format inputs */}
-          <Show when={pickerMode() === "input"}>
-            <ColorFormatInputs
-              color={currentColor()}
-              model={model()}
-              onChange={handleColorChange}
-            />
-          </Show>
-
-          {/* Current color preview with transparency pattern */}
-          <div style="padding: 8px; margin-top: 8px; border-top: 1px solid #e5e8ed;">
-            <div style={TOOLBAR_STYLES.label}>Preview</div>
-            <div
-              style={`
-                width: 100%;
-                height: 48px;
-                border-radius: 6px;
-                border: 1px solid #c3cad8;
-                ${swatchStyle(currentColor())}
-              `}
-            />
-          </div>
-
-          {/* Contrast warning */}
-          <Show when={!meetsWCAGAA()}>
-            <div style="padding: 8px; margin-top: 8px; border-top: 1px solid #e5e8ed;">
-              <div
-                style="padding: 8px; background: #fff5e6; border: 1px solid #ffcc80; border-radius: 4px; font-size: 0.75rem; color: #8a5a00;"
-              >
-                <strong>⚠ Contrast Warning:</strong> This color has a contrast ratio of{" "}
-                {contrastRatio().toFixed(2)}:1 on white. WCAG AA requires 4.5:1 for text.
-              </div>
-            </div>
-          </Show>
-        </div>
+          panelRef={(el) => { panelRef = el; }}
+        />
       </Show>
     </div>
   );

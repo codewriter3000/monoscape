@@ -1,7 +1,6 @@
 // Text alignment buttons
 
 import { For, Show } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
 import { alignmentActions } from "../constants";
 import type { TextAlignment } from "@monoscape/document-core";
 
@@ -15,10 +14,9 @@ interface AlignmentButtonsProps {
 }
 
 export function AlignmentButtons(props: AlignmentButtonsProps) {
-  function getButtonStyle(alignmentId: TextAlignment) {
-    const base = TOOLBAR_STYLES.button;
-    const active = props.selectedAlignment === alignmentId ? TOOLBAR_STYLES.buttonActive : "";
-    return base + active;
+  function getButtonClass(alignmentId: TextAlignment) {
+    const active = props.selectedAlignment === alignmentId ? " toolbar__button--active" : "";
+    return "toolbar__button" + active;
   }
 
   return (
@@ -35,7 +33,7 @@ export function AlignmentButtons(props: AlignmentButtonsProps) {
               aria-pressed={props.selectedAlignment === action.id ? "true" : "false"}
               title={action.label}
               tabIndex={-1}
-              style={getButtonStyle(action.id)}
+              class={getButtonClass(action.id)}
               onClick={() => props.onAlignmentChange(action.id)}
               onKeyDown={props.onButtonKeyDown}
             >

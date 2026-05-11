@@ -4,8 +4,8 @@
 
 ### 1. Project Structure: Microkernel Architecture with npm Workspaces
 
-**Date:** 2026-04-21  
-**Author:** Neo  
+**Date:** 2026-04-21
+**Author:** Neo
 **Status:** Active Guidance
 
 Adopt an npm workspaces monorepo with thin platform shells under `apps/*`, shared product layers under `packages/*`, and built-in extensions under `extensions/builtin/*`.
@@ -18,8 +18,8 @@ Adopt an npm workspaces monorepo with thin platform shells under `apps/*`, share
 
 ### 2. Base Editor Accessibility & UX Foundation (WCAG 2.2 AA)
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
+**Date:** 2026-04-21
+**Author:** Oracle
 **Status:** Active Guidance — Implementation Ready
 
 The emerging base layout (TextEditor + FormattingToolbar + MonoscapeShell) is strong on fundamentals and ready for implementation. Core patterns present: semantic HTML, ARIA labels, focus management, keyboard navigation.
@@ -54,8 +54,8 @@ The emerging base layout (TextEditor + FormattingToolbar + MonoscapeShell) is st
 
 ### 3. Formatting Toolbar Accessibility Specification
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
+**Date:** 2026-04-21
+**Author:** Oracle
 **Status:** Approved — Binding for Implementation
 
 The formatting toolbar and contenteditable editor must meet WCAG 2.2 AA from first commit. Requirements are implementation specifications, not optional enhancements.
@@ -115,8 +115,8 @@ The formatting toolbar and contenteditable editor must meet WCAG 2.2 AA from fir
 
 ### 4. Accessibility & UX Pitfalls: Layout, Toolbar, Shell Integration
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
+**Date:** 2026-04-21
+**Author:** Oracle
 **Status:** Guidance — Issues Logged for Resolution
 
 Review of packages/ui, app entrypoints (web/desktop) against WCAG 2.2 AA baseline identified priority fixes:
@@ -139,8 +139,8 @@ Review of packages/ui, app entrypoints (web/desktop) against WCAG 2.2 AA baselin
 
 ### 5. Base Layout Feature — Implementation Plan (Trinity)
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** ✅ IMPLEMENTED & APPROVED
 
 Implementation goal: Make editor experience visible and functional in both shells with centered document canvas, top toolbar, 12pt Liberation Serif default, and toolbar state synced with document selection.
@@ -185,8 +185,8 @@ Implementation goal: Make editor experience visible and functional in both shell
 
 ### 6. Base Layout Feature — Acceptance Summary (Switch)
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** PASS — Ready for Merge
 
 Feature acceptance testing approved base layout with all acceptance criteria met.
@@ -230,8 +230,8 @@ Feature acceptance testing approved base layout with all acceptance criteria met
 
 ### 7. Desktop Platform Parity — TextEditor Integration
 
-**Date:** 2026-04-21  
-**Author:** Neo (reconciliation)  
+**Date:** 2026-04-21
+**Author:** Neo (reconciliation)
 **Status:** Decision — Implementation Pending
 
 Desktop app must integrate TextEditor component to match web app. Current state: placeholder bootstrap message only.
@@ -244,8 +244,8 @@ Desktop app must integrate TextEditor component to match web app. Current state:
 
 ### 8. Runtime Architecture Split — Web Canonical, Capacitor Android, Tauri Desktop
 
-**Date:** 2026-04-21  
-**Author:** Neo  
+**Date:** 2026-04-21
+**Author:** Neo
 **Status:** Active Decision — Implementation Pending
 
 Adopt a split runtime strategy:
@@ -264,8 +264,8 @@ Adopt a split runtime strategy:
 
 ### 9. Runtime Execution Acceptance Gate — Three Tiers with Regression Tests
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** Active Guidance — Implementation Gate
 
 Define acceptance criteria for web (MVP), desktop (high-priority), and mobile (optional) runtime tiers.
@@ -300,8 +300,8 @@ Define acceptance criteria for web (MVP), desktop (high-priority), and mobile (o
 
 ### 10. Runtime Implementation — Vite Web, Capacitor Android, Tauri Desktop
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** Implementation Complete — Ready for Entrypoint Wiring
 
 Implemented Neo's runtime split by wiring shared SolidJS UI through canonical web build (Vite), Capacitor Android shell, and Tauri desktop shell.
@@ -319,8 +319,8 @@ Implemented Neo's runtime split by wiring shared SolidJS UI through canonical we
 
 ### 11. Runtime Entry Surfaces — Thin Entrypoints with Shared Editor
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** Guidance — Entrypoint Wiring Complete
 
 Keep each client's runtime boot glue inside its own app shell while mounting the same shared editor surface from `packages/ui`.
@@ -337,8 +337,8 @@ Keep each client's runtime boot glue inside its own app shell while mounting the
 
 ### 12. Desktop Platform Parity — Custom Tauri Topbar
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** ✅ IMPLEMENTED & APPROVED
 
 Keep desktop window chrome local to `apps/desktop` by adding a Tauri-specific topbar component above `MonoscapeShell`, while leaving the shared editor frame in `packages/ui` unchanged.
@@ -353,8 +353,8 @@ Keep desktop window chrome local to `apps/desktop` by adding a Tauri-specific to
 
 ### 13. Mobile Diagnostics & Emulator Tuning — Logging Levels + Launcher Script
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** ✅ IMPLEMENTED & APPROVED
 
 Adopt a lightweight mobile logging utility with runtime-configurable levels (DEBUG/INFO/WARN/ERROR) and a Node-based emulator launcher that accepts memory, CPU core, and GPU mode parameters for the Pixel_9a AVD.
@@ -369,8 +369,8 @@ Adopt a lightweight mobile logging utility with runtime-configurable levels (DEB
 
 ### 14. Platform Feature Acceptance Gate — Desktop Topbar & Mobile Diagnostics
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** Active Guidance — Implementation Gate Passed
 
 Define acceptance criteria for desktop custom topbar and mobile crash diagnostics/emulator tuning.
@@ -413,8 +413,8 @@ Define acceptance criteria for desktop custom topbar and mobile crash diagnostic
 
 ### 15. Runtime Execution Environment Review & Capacitor Assessment
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** Decision — Architectural Guidance for Phase 3
 
 Comprehensive audit of execution environments (web, desktop, mobile) with verdict on Capacitor architectural fit.
@@ -444,8 +444,8 @@ None are MVP requirements. Defer until product proven.
 
 **Recommended Path Forward:**
 
-**Phase 1 (Web, 2 weeks):** Prove editor + extension model end-to-end.  
-**Phase 2 (Desktop, 2 weeks after Phase 1):** Demonstrate Tauri portability; test if native adds value.  
+**Phase 1 (Web, 2 weeks):** Prove editor + extension model end-to-end.
+**Phase 2 (Desktop, 2 weeks after Phase 1):** Demonstrate Tauri portability; test if native adds value.
 **Phase 3 (Mobile, after Phase 2, deliberate choice):**
 - PWA first (zero native toolchain, instant updates)
 - Capacitor if native needed for offline/persistence
@@ -468,8 +468,8 @@ None are MVP requirements. Defer until product proven.
 
 ### 16. Shared Typography Controls Architecture
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** ✅ IMPLEMENTED & APPROVED
 
 Keep the font catalog, categories, and size ladder in `packages/document-core`, but keep runtime-only acquisition paths outside the shared UI.
@@ -491,8 +491,8 @@ Keep the font catalog, categories, and size ladder in `packages/document-core`, 
 
 ### 17. Desktop Google Fonts Boundary — Tauri Backend Only
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** ✅ IMPLEMENTED & APPROVED
 
 Google Fonts search/download is implemented as Tauri commands only. The Rust backend reads `GOOGLE_WEBFONTS_API_KEY` (via dotenvy in dev) and proxies all API requests, returning only sanitized metadata (family/category/variants/subsets) plus relative font file paths. Downloaded fonts are stored under the app data directory in `fonts/google/`, while uploaded fonts live in `fonts/uploaded/`.
@@ -509,8 +509,8 @@ Keeping API calls in the desktop backend prevents key exposure in the browser ru
 
 ### 18. Font Controls Feature Reviewer Gate
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** Active Guidance — Implementation Gate Pending
 
 Comprehensive acceptance gate for font controls feature covering font selection, font size, file operations, categorization, and desktop Google Fonts integration.
@@ -570,9 +570,9 @@ Comprehensive acceptance gate for font controls feature covering font selection,
 
 ### 19. Font Controls Accessibility & UX Revisions
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
-**Status:** ✅ APPROVED — Ready for Merge  
+**Date:** 2026-04-21
+**Author:** Oracle
+**Status:** ✅ APPROVED — Ready for Merge
 **Applies To:** Font toolbar controls (FormattingToolbar.tsx)
 
 ## Context
@@ -656,9 +656,9 @@ if (confirmed) {
 
 ### 21. Trinity: Editor Formatting Expansion — Shared Architecture Decision
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
-**Status:** Proposed  
+**Date:** 2026-04-21
+**Author:** Trinity
+**Status:** Proposed
 
 Keep the expanded formatting surface shared in `packages/ui`, with `FormattingToolbar.tsx` owning the UI for inline + paragraph controls and `TextEditor.tsx` owning selection restoration plus the editor-side formatting model.
 
@@ -683,10 +683,10 @@ Keep the expanded formatting surface shared in `packages/ui`, with `FormattingTo
 
 ### 22. Oracle: Formatting Toolbar & Text Editor Expansion Review — UX & Accessibility Analysis
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
-**Status:** Findings + Guidance (No code changes required at this stage)  
-**Review Scope:** FormattingToolbar.tsx, TextEditor.tsx  
+**Date:** 2026-04-21
+**Author:** Oracle
+**Status:** Findings + Guidance (No code changes required at this stage)
+**Review Scope:** FormattingToolbar.tsx, TextEditor.tsx
 
 **Executive Summary:**
 
@@ -760,9 +760,9 @@ The current formatting controls (Bold/Italic/Underline, Font Family, Font Size) 
 
 ### 23. Switch: Formatting Expansion Feature Gate
 
-**Date:** 2026-04-21  
-**Author:** Switch  
-**Status:** REJECTED PENDING IMPLEMENTATION + EVIDENCE  
+**Date:** 2026-04-21
+**Author:** Switch
+**Status:** REJECTED PENDING IMPLEMENTATION + EVIDENCE
 
 **Scope:** Formatting expansion requested features:
 1. Searchable font picker
@@ -877,9 +877,9 @@ The current formatting controls (Bold/Italic/Underline, Font Family, Font Size) 
 
 ### 24. Neo: Formatting Blocker Revision — Tab/Shift+Tab & Font Deletion Rewrite Decision
 
-**Date:** 2026-04-21  
-**Author:** Neo  
-**Status:** Proposed  
+**Date:** 2026-04-21
+**Author:** Neo
+**Status:** Proposed
 
 Preserve shared line-indent behavior, but stop binding indentation to raw Tab / Shift+Tab inside the editor. The shared editor now keeps Tab as the focus-escape path, exposes the rule in visible helper text, and uses toolbar actions plus explicit modifier shortcuts (Ctrl+] / Ctrl+[) for indent and outdent.
 
@@ -961,9 +961,9 @@ TypeScript clean. WCAG 2.2 AA verified. Keyboard navigation preserved. Student-c
 
 ### 20. Font Controls Feature Re-Review & Approval
 
-**Date:** 2026-04-21  
-**Author:** Switch  
-**Status:** 🟢 APPROVED FOR MERGE  
+**Date:** 2026-04-21
+**Author:** Switch
+**Status:** 🟢 APPROVED FOR MERGE
 **Applies To:** Font toolbar controls (FormattingToolbar.tsx)
 
 ## Context
@@ -1011,8 +1011,8 @@ All three blocker issues resolved. Quality baseline maintained. Accessibility ve
 
 ### 8. Trinity Font Regression Fix
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** APPROVED
 
 Caret-only font family and font size changes in the shared `contentEditable` editor should be represented by a temporary typing span with a zero-width non-editable anchor element, not by a styled marker character. After a user commits a font family or font size change from the toolbar, focus should return to the editor so the saved insertion point and pending typography survive the control interaction.
@@ -1031,8 +1031,8 @@ Caret-only font family and font size changes in the shared `contentEditable` edi
 
 ### 9. Morpheus — Desktop Font API Contract Follow-up
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** Proposed Team Rule
 
 Desktop Tauri invoke names should have one source of truth in `apps/desktop/src/fontSources.ts`; feature surfaces like `apps/desktop/src/App.tsx` should call wrappers, not hard-code command strings.
@@ -1053,8 +1053,8 @@ When a desktop capability exists, expose it once from `apps/desktop/src/*Sources
 
 ### 10. Switch Font Bug Gate
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** REJECTED PENDING DESKTOP API FIX
 
 **Scope:** Editor insertion typography persistence, no premature line-height reflow after collapsed font-size changes, and desktop Google Fonts API wiring.
@@ -1087,8 +1087,8 @@ Required to pass:
 
 ### 11. Oracle UX/Accessibility Review: Font Control Redesign
 
-**Date:** 2026-04-21  
-**Reviewer:** Oracle (Accessibility & UX)  
+**Date:** 2026-04-21
+**Reviewer:** Oracle (Accessibility & UX)
 **Status:** Guidance Document (Pre-Implementation Review)
 
 **Task:** Review interaction model for complex font control with filter and add-font actions.
@@ -1129,8 +1129,8 @@ Required to pass:
 
 ### 12. Trinity Decision Inbox — Mixed Font Behavior
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** Implementation Guidance
 
 **Decision:** Keep the editor canvas default typography on the root editable surface, but apply user font-family and font-size changes as inline typography at the selection or caret level.
@@ -1152,8 +1152,8 @@ If we later add export/import or OT/CRDT document modeling, preserve inline typo
 
 ### 25. Morpheus: Formatting Gate Revision — Mixed-Selection Explicit Sentinel
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** ✅ APPROVED — Ready for Merge
 
 Represent heterogeneous editor selections in toolbar-facing value controls with an explicit mixed sentinel (`null`) and render that state as `Mixed`, rather than leaking the selection-start value through the contract.
@@ -1192,8 +1192,8 @@ The previous contract let `TextEditor` pass a single concrete font family, font 
 
 ### 32. Oracle Guidance: Alt-Based Keytips & Tab Indentation (Accessibility Review)
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
+**Date:** 2026-04-21
+**Author:** Oracle
 **Status:** Active Guidance — Requires Product Decision
 
 Comprehensive accessibility review of two proposed keyboard model changes:
@@ -1232,8 +1232,8 @@ Comprehensive accessibility review of two proposed keyboard model changes:
 
 ### 33. Switch Review Gate: Alt Keytip Keyboard Model
 
-**Date:** 2026-04-21  
-**Author:** Switch  
+**Date:** 2026-04-21
+**Author:** Switch
 **Status:** REJECTED — Implementation Does Not Meet Requirements
 
 Reviewed Trinity's Alt keytips and Tab/Shift+Tab indentation implementation against three acceptance gates:
@@ -1272,8 +1272,8 @@ Do not resubmit until all three proof buckets exist:
 
 ### 34. Trinity Decision: Alt keytips and editor Tab indent
 
-**Date:** 2026-04-21  
-**Author:** Trinity  
+**Date:** 2026-04-21
+**Author:** Trinity
 **Status:** REJECTED BY SWITCH — Implementation Incomplete
 
 **Proposed Model:**
@@ -1303,8 +1303,8 @@ Monoscape's top-level formatting toolbar is no longer part of the plain Tab sequ
 
 ### 35. Neo — Keytip Trap Revision
 
-**Date:** 2026-04-21  
-**Author:** Neo  
+**Date:** 2026-04-21
+**Author:** Neo
 **Status:** Decision — Product Model Approved
 
 ## Decision
@@ -1333,8 +1333,8 @@ Keep `Tab` / `Shift+Tab` line indentation inside the shared `contentEditable` ed
 
 ### 36. Morpheus — Keytip Proof Revision
 
-**Date:** 2026-04-21  
-**Author:** Morpheus  
+**Date:** 2026-04-21
+**Author:** Morpheus
 **Status:** Implementation Complete — Oracle Gate Verified
 
 The Alt-keytip + Tab-indent model requires one extra boundary rule to stay WCAG-safe: once Escape or Alt moves focus onto a top-level toolbar control that is intentionally outside the normal Tab order, plain Tab / Shift+Tab must leave the entire editor shell rather than bouncing focus back into the editor canvas.
@@ -1374,8 +1374,8 @@ The previous model had an unproven and real trap risk: Escape could move focus t
 
 ### 26. Neo — Editor Refactor Ownership Split
 
-**Date:** 2026-05-02  
-**Author:** Neo  
+**Date:** 2026-05-02
+**Author:** Neo
 **Status:** Handoff Guidance
 
 Defined risky seam for toolbar vs. editor refactor: **UI widget complexity vs. document mutation logic**.
@@ -1396,8 +1396,8 @@ Defined risky seam for toolbar vs. editor refactor: **UI widget complexity vs. d
 
 ### 27. Oracle — Editor Controls Accessibility Review
 
-**Date:** 2026-04-21  
-**Author:** Oracle  
+**Date:** 2026-04-21
+**Author:** Oracle
 **Status:** Read-only audit & guidance
 
 Reviewed compact dropdowns, font color picker, saved style-set presets. Verdict: Concept sound; three UX/accessibility trade-offs require explicit product decisions.
@@ -1411,8 +1411,8 @@ Reviewed compact dropdowns, font color picker, saved style-set presets. Verdict:
 
 ### 28. Morpheus — Color & Academic Style Contracts
 
-**Date:** 2026-05-02  
-**Author:** Morpheus  
+**Date:** 2026-05-02
+**Author:** Morpheus
 **Status:** Complete — Shared contracts delivered
 
 **Delivered:**
@@ -1425,8 +1425,8 @@ Reviewed compact dropdowns, font color picker, saved style-set presets. Verdict:
 
 ### 29. Morpheus — Editor Application Architecture
 
-**Date:** 2026-05-02  
-**Author:** Morpheus  
+**Date:** 2026-05-02
+**Author:** Morpheus
 **Status:** Implementation complete — ready for review
 
 **Refactored:** TextEditor.tsx (1331 → 226 lines root + split modules); all test files under 250 lines
@@ -1439,8 +1439,8 @@ Reviewed compact dropdowns, font color picker, saved style-set presets. Verdict:
 
 ### 30. Morpheus — Toolbar Revision
 
-**Date:** 2026-05-02  
-**Author:** Morpheus  
+**Date:** 2026-05-02
+**Author:** Morpheus
 **Status:** Complete — Approved for merge
 
 Fixed Trinity's rejected artifacts:
@@ -1453,8 +1453,8 @@ Fixed Trinity's rejected artifacts:
 
 ### 31. Trinity — Compact Toolbar Controls and Sophisticated UI Widgets
 
-**Date:** 2026-05-02  
-**Author:** Trinity  
+**Date:** 2026-05-02
+**Author:** Trinity
 **Status:** Implementation complete — awaiting review (approved after Morpheus revision)
 
 **Delivered:**
@@ -1467,8 +1467,8 @@ Fixed Trinity's rejected artifacts:
 
 ### 32. Switch — Editor Regression Gate
 
-**Date:** 2026-05-02  
-**Author:** Switch  
+**Date:** 2026-05-02
+**Author:** Switch
 **Status:** Acceptance criteria + rejection gate
 
 **5 Blockers:**
@@ -1482,8 +1482,8 @@ Fixed Trinity's rejected artifacts:
 
 ### 33. Switch — Review Verdict: REJECT
 
-**Date:** 2026-05-02  
-**Author:** Switch  
+**Date:** 2026-05-02
+**Author:** Switch
 **Status:** Initial rejection (later revised)
 
 **Blockers:**
@@ -1498,8 +1498,8 @@ Fixed Trinity's rejected artifacts:
 
 ### 34. Switch — Final Review Verdict: APPROVE
 
-**Date:** 2026-05-02  
-**Author:** Switch  
+**Date:** 2026-05-02
+**Author:** Switch
 **Status:** Approval (after Morpheus revision)
 
 **All Blockers Resolved:**
@@ -1583,5 +1583,47 @@ All three subsystems verified and passing:
 - ✅ `npm test`
 - ✅ `npm run typecheck`
 - ✅ `npm run build`
+
+---
+
+### 39. Morpheus — Desktop Document File-Service Boundary
+
+**Date:** 2026-05-10T00:00:00-04:00
+**Author:** Morpheus
+**Status:** Complete — Implemented
+
+The desktop shell owns current-document session state and talks to Tauri through a single typed adapter in `apps/desktop/src/documentFileIO.ts`. Native persistence uses a `.monoscape` JSON file with `title`, `workspaceMode`, `createdAt`, `updatedAt`, and `editorHtml`. Recent documents are persisted in desktop app data and retain unavailable entries when files disappear. PDF export stays a write-only backend capability: the frontend or another slice must supply PDF bytes, and Tauri only resolves the save path and writes them.
+
+**Why:** Keeps file awareness out of the shared editor, makes the desktop/runtime seam explicit, and avoids pulling PDF rendering concerns into the native boundary.
+
+**Evidence:**
+- `apps/desktop/src/documentFileIO.ts`
+- `apps/desktop/src-tauri/src/main.rs`
+- `apps/desktop/src-tauri/Cargo.toml`
+
+---
+
+### 40. Trinity — Desktop Welcome Hub and Shared Editor Session Contract
+
+**Date:** 2026-05-10
+**Author:** Trinity
+**Status:** Complete — Implemented
+
+Desktop file switching uses an uncontrolled shared editor contract based on three props: `documentSessionKey`, `initialDocumentHtml`, and `onDocumentChange`. `initialDocumentHtml` is only applied when the session key changes, so desktop open/new flows can swap sessions without turning the `contentEditable` surface into a controlled input.
+
+The desktop `New` action routes to the welcome hub instead of directly overwriting the active editor session. Blank-file creation, workflow preset selection, recent-file browsing, and open-from-disk all live in that welcome surface.
+
+**Why:** Prevents the shared `TextEditor` from resetting DOM content on every keystroke while still allowing desktop open/new flows, keeps file/session ownership in `apps/desktop`, and gives the product one consistent place for blank-file creation, workflow presets, and recent-file recovery.
+
+**Consequences:**
+- Other shells can reuse the same `TextEditor` session contract if they need file/session swapping.
+- Desktop save/open/export actions should continue to treat `apps/desktop/src/documentFileIO.ts` as the persistence boundary.
+- Additional template or recent-file features should extend the welcome hub first, not add parallel new-document flows in the editor chrome.
+
+**Evidence:**
+- `apps/desktop/src/App.tsx`
+- `apps/desktop/src/DesktopTopbar.tsx`
+- `apps/desktop/src/WelcomeScreen.tsx`
+- `packages/ui/src/editor/TextEditor.tsx`
 
 ---

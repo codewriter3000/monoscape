@@ -19,7 +19,7 @@ export interface FormattingState {
 
 export type TextAlignment = "left" | "center" | "right" | "justify";
 
-export const MIXED_FORMATTING_LABEL = "Mixed";
+export const MIXED_FORMATTING_LABEL = "";
 
 export const FORMATTING_TOOLBAR_KEYTIPS = {
   fontFamily: "F",

@@ -1,10 +1,24 @@
-import { createWorkspaceSeed, defaultWorkflowTemplates } from "@monoscape/document-core";
+import { Show, createMemo, createSignal, onMount } from "solid-js";
+import { defaultWorkflowTemplates } from "@monoscape/document-core";
 import { citationsExtension } from "@monoscape/extension-citations";
 import { reviewExtension } from "@monoscape/extension-review";
 import { createBootstrapPlan } from "@monoscape/kernel";
-import { MonoscapeShell, TextEditor } from "@monoscape/ui";
+import { MonoscapeShell, RightPanel, TextEditor } from "@monoscape/ui";
 import { DesktopTopbar } from "./DesktopTopbar";
+import { desktopDocumentFileIO, type RecentDesktopDocument } from "./documentFileIO";
 import { desktopFontCapabilities } from "./fontSources";
+import { WelcomeScreen } from "./WelcomeScreen";
+import "./desktopRuntime.css";
+import { deriveDocumentTitle, isUntitledTitle, readErrorMessage } from "./desktopAppHelpers";
+import {
+  FALLBACK_RECENT_STATUS,
+  createBlankDocumentSession,
+  createTemplateDocumentSession,
+  type DesktopDocumentSession,
+  type DesktopStatusMessage,
+  type StatusTone
+} from "./desktopAppSessions";
+import { useDesktopDocumentActions } from "./useDesktopDocumentActions";
 
 export const desktopBootstrapPlan = createBootstrapPlan(
   {
@@ -19,57 +33,174 @@ export const desktopBootstrapPlan = createBootstrapPlan(
   [citationsExtension.manifest, reviewExtension.manifest]
 );
 
-const starterDocument = createWorkspaceSeed("Untitled syllabus notes", "notes");
-
 export function DesktopApp() {
+  const [viewMode, setViewMode] = createSignal<"welcome" | "editor">("welcome");
+  const [currentSession, setCurrentSession] = createSignal<DesktopDocumentSession | null>(null);
+  const [recentDocuments, setRecentDocuments] = createSignal<RecentDesktopDocument[]>([]);
+  const [isLoadingRecentDocuments, setIsLoadingRecentDocuments] = createSignal(false);
+  const [isWorking, setIsWorking] = createSignal(false);
+  const [statusMessage, setStatusMessage] = createSignal<DesktopStatusMessage>(FALLBACK_RECENT_STATUS);
+
+  const hasDesktopFileIO = () => desktopDocumentFileIO.isAvailable();
+  const activeSession = createMemo(() => currentSession());
+  const hasEditorSession = createMemo(() => !!activeSession());
+  const isEditorMode = createMemo(() => viewMode() === "editor" && hasEditorSession());
+  const isDocumentDirty = createMemo(() => {
+    const session = activeSession();
+    return !!session && session.editorHtml !== session.savedHtml;
+  });
+
+  const setStatus = (text: string, tone: StatusTone = "neutral") => {
+    setStatusMessage({ text, tone });
+  };
+
+  const refreshRecentDocuments = async () => {
+    if (!hasDesktopFileIO()) {
+      setRecentDocuments([]);
+      return;
+    }
+
+    setIsLoadingRecentDocuments(true);
+    try {
+      setRecentDocuments(await desktopDocumentFileIO.listRecentDocuments());
+    } catch (error) {
+      setStatus(readErrorMessage(error, "Unable to load recent documents."), "danger");
+    } finally {
+      setIsLoadingRecentDocuments(false);
+    }
+  };
+
+  onMount(() => {
+    void refreshRecentDocuments();
+  });
+
+  const openEditorSession = (session: DesktopDocumentSession, nextStatus?: DesktopStatusMessage) => {
+    setCurrentSession(session);
+    setViewMode("editor");
+    if (nextStatus) {
+      setStatus(nextStatus.text, nextStatus.tone);
+    }
+  };
+
+  const updateCurrentSessionFromEditor = (editorHtml: string) => {
+    setCurrentSession((session) => {
+      if (!session) {
+        return session;
+      }
+
+      const nextTitle =
+        !session.path && isUntitledTitle(session.title)
+          ? deriveDocumentTitle(editorHtml, session.title)
+          : session.title;
+
+      return { ...session, title: nextTitle, editorHtml, updatedAt: Date.now() };
+    });
+  };
+
+  const enterWelcomeMode = () => {
+    setViewMode("welcome");
+    setStatus(FALLBACK_RECENT_STATUS.text, FALLBACK_RECENT_STATUS.tone);
+  };
+
+  const createBlankDocument = () => {
+    openEditorSession(createBlankDocumentSession(), { tone: "success", text: "Blank document ready." });
+  };
+
+  const createDocumentFromTemplate = (templateId: string) => {
+    const template = defaultWorkflowTemplates.find((entry) => entry.id === templateId);
+    openEditorSession(createTemplateDocumentSession(templateId), {
+      tone: "success",
+      text: template ? `${template.label} preset loaded.` : "Preset loaded."
+    });
+  };
+
+  const { openDocument, openRecentDocument, saveCurrentSession, exportCurrentSessionToPdf, printCurrentSession } =
+    useDesktopDocumentActions({
+      hasDesktopFileIO,
+      setIsWorking,
+      setStatus,
+      openEditorSession,
+      refreshRecentDocuments,
+      activeSession
+    });
+
   return (
     <div class="desktop-runtime">
-      <style>{`
-        .desktop-runtime {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .desktop-runtime__shell {
-          flex: 1;
-          min-height: 0;
-        }
-
-        .desktop-runtime .monoscape-shell {
-          min-height: 100%;
-        }
-
-        .desktop-runtime .monoscape-shell__primary-card {
-          width: min(100%, 1180px);
-        }
-      `}</style>
-      <DesktopTopbar extensionCount={desktopBootstrapPlan.extensionQueue.length} />
-      <div class="desktop-runtime__shell">
-        <MonoscapeShell
-          platform="desktop"
-          title="Monoscape Desktop"
-          subtitle="Large-canvas drafting in a Tauri shell with the shared editor stack intact."
-          primary={<TextEditor fontCapabilities={desktopFontCapabilities} />}
-          secondary={
-            <>
-              <p style="margin:0 0 12px;font-weight:600;color:#172033;">Workflow templates</p>
-              <ul style="margin:0;padding-left:18px;color:#52607a;">
-                {defaultWorkflowTemplates.map((template) => (
-                  <li>{template.label}</li>
-                ))}
-              </ul>
-            </>
-          }
-          utilities={
-            <p style="margin:0;">
-              {desktopBootstrapPlan.extensionQueue.length} extensions are ready for activation. Starter
-              {" "}
-              document: {starterDocument.title}. Desktop chrome stays local to `apps/desktop`; the
-              shared editor shell still lives in `packages/ui`.
-            </p>
-          }
-        />
+      <DesktopTopbar
+        extensionCount={desktopBootstrapPlan.extensionQueue.length}
+        viewMode={viewMode()}
+        documentTitle={activeSession()?.title}
+        documentMode={activeSession()?.workspaceMode}
+        documentPath={activeSession()?.path}
+        isBusy={isWorking()}
+        isDocumentDirty={isDocumentDirty()}
+        canSave={hasEditorSession()}
+        canExport={isEditorMode()}
+        canPrint={isEditorMode()}
+        onNew={enterWelcomeMode}
+        onOpen={() => void openDocument()}
+        onSave={() => void saveCurrentSession("save")}
+        onSaveAs={() => void saveCurrentSession("save-as")}
+        onSaveCopy={() => void saveCurrentSession("save-copy")}
+        onExportPdf={() => void exportCurrentSessionToPdf()}
+        onPrint={printCurrentSession}
+      />
+      <div class="desktop-runtime__body">
+        <div class="desktop-runtime__surface">
+          <Show
+            when={isEditorMode() && activeSession()}
+            fallback={
+              <WelcomeScreen
+                activeDocumentTitle={activeSession()?.title}
+                hasActiveDocument={hasEditorSession()}
+                loadingRecentDocuments={isLoadingRecentDocuments()}
+                recentDocuments={recentDocuments()}
+                onCreateBlank={createBlankDocument}
+                onCreateFromTemplate={createDocumentFromTemplate}
+                onOpenFile={() => void openDocument()}
+                onOpenRecent={(path) => void openRecentDocument(path)}
+                onResumeCurrentDocument={() => setViewMode("editor")}
+              />
+            }
+          >
+            {(session) => (
+              <MonoscapeShell
+                platform="desktop"
+                title="Monoscape Desktop"
+                subtitle="Desktop editor shell"
+                primary={
+                  <TextEditor
+                    documentSessionKey={session().id}
+                    initialDocumentHtml={session().editorHtml}
+                    onDocumentChange={updateCurrentSessionFromEditor}
+                    fontCapabilities={desktopFontCapabilities}
+                  />
+                }
+                secondary={<RightPanel />}
+                utilities={
+                  <div class="desktop-runtime__utilities">
+                    <div class="desktop-runtime__utility-block">
+                      <span class="desktop-runtime__utility-label">Document mode</span>
+                      <span class="desktop-runtime__utility-value">{session().workspaceMode}</span>
+                    </div>
+                    <div class="desktop-runtime__utility-block">
+                      <span class="desktop-runtime__utility-label">Persistence</span>
+                      <span class="desktop-runtime__utility-value">
+                        {session().path ? session().path : "Unsaved desktop draft"}
+                      </span>
+                    </div>
+                    <div class="desktop-runtime__utility-block">
+                      <span class="desktop-runtime__utility-label">Extensions queued</span>
+                      <span class="desktop-runtime__utility-value">
+                        {desktopBootstrapPlan.extensionQueue.length}
+                      </span>
+                    </div>
+                  </div>
+                }
+              />
+            )}
+          </Show>
+        </div>
       </div>
     </div>
   );

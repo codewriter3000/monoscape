@@ -3,6 +3,7 @@ import type { PlatformTarget } from "@monoscape/kernel";
 
 export { FormattingToolbar } from "./FormattingToolbar";
 export { TextEditor } from "./TextEditor";
+export { RightPanel } from "./RightPanel";
 
 export interface MonoscapeShellProps {
   platform: PlatformTarget;
@@ -142,7 +143,8 @@ export function MonoscapeShell(props: MonoscapeShellProps) {
           }
         }
       `}</style>
-      <header class="monoscape-shell__header">
+      {/* Save for future use */}
+      {/* <header class="monoscape-shell__header">
         <div class="monoscape-shell__header-inner">
           <p class="monoscape-shell__eyebrow">
             Platform: {props.platform}
@@ -150,7 +152,7 @@ export function MonoscapeShell(props: MonoscapeShellProps) {
           <h1 class="monoscape-shell__title">{props.title}</h1>
           <p class="monoscape-shell__subtitle">{props.subtitle}</p>
         </div>
-      </header>
+      </header> */}
       <section class="monoscape-shell__section">
         <div class={`monoscape-shell__content${props.secondary ? " has-secondary" : ""}`}>
           <article class="monoscape-shell__primary">

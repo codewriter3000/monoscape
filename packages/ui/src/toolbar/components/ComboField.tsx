@@ -8,6 +8,7 @@ interface ComboFieldProps<T> {
   options: T[];
   getOptionValue: (option: T) => string;
   getOptionLabel: (option: T) => string;
+  label?: string;
   placeholder?: string;
   ariaLabel: string;
   listId: string;
@@ -25,6 +26,17 @@ interface ComboFieldProps<T> {
 
 export function ComboField<T>(props: ComboFieldProps<T>) {
   const [optionRefs, setOptionRefs] = createSignal<HTMLButtonElement[]>([]);
+  const [isHovered, setIsHovered] = createSignal(false);
+  const [isFocused, setIsFocused] = createSignal(false);
+  const [isChevronActive, setIsChevronActive] = createSignal(false);
+
+  const isActive = () => isFocused() || props.isOpen;
+
+  const borderColor = () => {
+    if (isActive()) return "#005fcc";
+    if (isHovered()) return "#8a90a0";
+    return "#c3cad8";
+  };
 
   createEffect(() => {
     if (props.isOpen) {
@@ -107,13 +119,6 @@ export function ComboField<T>(props: ComboFieldProps<T>) {
     props.onCommit(optionValue);
   }
 
-  const comboInputStyle =
-    "flex:1;height:42px;padding:0 12px;border:1px solid #c3cad8;border-right:none;" +
-    "border-radius:12px 0 0 12px;background:#f7f9fc;color:#172033;font:inherit;min-width:0;";
-  const comboButtonStyle =
-    "display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;" +
-    "border:1px solid #c3cad8;border-radius:0 12px 12px 0;background:#f7f9fc;color:#52607a;" +
-    "font:inherit;cursor:pointer;";
   const comboMenuStyle =
     "position:absolute;left:0;top:calc(100% + 8px);z-index:15;width:100%;display:flex;" +
     "flex-direction:column;gap:6px;max-height:240px;overflow:auto;padding:8px;" +
@@ -122,7 +127,7 @@ export function ComboField<T>(props: ComboFieldProps<T>) {
   const comboOptionStyle =
     "display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;" +
     "padding:8px 10px;border:1px solid #e3e8f1;border-radius:10px;background:#ffffff;" +
-    "color:#172033;font:inherit;text-align:left;cursor:pointer;";
+    "color:#172033;font:inherit;text-align:left;cursor:pointer;transition:background 0.1s,border-color 0.1s;";
 
   let localInputRef: HTMLInputElement | undefined;
 
@@ -131,39 +136,72 @@ export function ComboField<T>(props: ComboFieldProps<T>) {
       ref={props.containerRef}
       style="position: relative; display: inline-flex; flex-direction: column; align-items: flex-start;"
     >
-      <div style="position: relative; display: flex;">
-        <input
-          ref={(el) => {
-            localInputRef = el;
-            props.inputRef?.(el);
-          }}
-          type="text"
-          value={props.value}
-          placeholder={props.placeholder}
-          aria-label={props.ariaLabel}
-          aria-controls={props.isOpen ? props.listId : undefined}
-          aria-expanded={props.isOpen}
-          tabIndex={-1}
-          style={comboInputStyle}
-          onFocus={() => props.onOpenChange(true)}
-          onInput={(e) => props.onValueChange(e.currentTarget.value)}
-          onKeyDown={handleInputKeyDown}
-        />
-        <button
-          type="button"
-          aria-label={`Show ${props.ariaLabel.toLowerCase()} options`}
-          style={comboButtonStyle}
-          tabIndex={-1}
-          onMouseDown={(event) => event.preventDefault()}
-          onClick={() => {
-            props.onOpenChange(!props.isOpen);
-            if (!props.isOpen) {
-              queueMicrotask(() => localInputRef?.focus());
-            }
-          }}
+      <div
+        style="position: relative; display: flex;"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onFocusIn={() => setIsFocused(true)}
+        onFocusOut={() => setIsFocused(false)}
+      >
+        <div
+          style={`
+            display:flex;align-items:stretch;border:1px solid ${borderColor()};border-radius:12px;overflow:hidden;
+            box-shadow:${isActive() ? "0 0 0 2px rgba(0,95,204,0.2)" : "none"};
+            transition:border-color 0.15s,box-shadow 0.15s;
+          `}
         >
-          ▾
-        </button>
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 12px;background:#f7f9fc;min-width:0;width:100px;">
+            <Show when={props.label}>
+              <span style="font-weight:700;font-size:0.65rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">{props.label}</span>
+            </Show>
+            <input
+              ref={(el) => {
+                localInputRef = el;
+                props.inputRef?.(el);
+              }}
+              type="text"
+              value={props.value}
+              placeholder={props.placeholder}
+              aria-label={props.ariaLabel}
+              aria-controls={props.isOpen ? props.listId : undefined}
+              aria-expanded={props.isOpen}
+              tabIndex={-1}
+              style="border:none;background:transparent;color:#52607a;font:inherit;min-width:0;width:100%;outline:none;padding:0;line-height:1.4;"
+              onFocus={() => props.onOpenChange(true)}
+              onInput={(e) => props.onValueChange(e.currentTarget.value)}
+              onKeyDown={handleInputKeyDown}
+            />
+          </div>
+          <button
+            type="button"
+            aria-label={`Show ${props.ariaLabel.toLowerCase()} options`}
+            style={`
+              display:inline-flex;align-items:center;justify-content:center;
+              width:42px;min-height:42px;align-self:stretch;
+              border:none;border-left:1px solid ${borderColor()};
+              background:${isChevronActive() ? "#dce8ff" : isActive() ? "#eef4ff" : "#f7f9fc"};
+              color:${isActive() ? "#005fcc" : "#52607a"};
+              font:inherit;cursor:pointer;
+              transition:background 0.15s,border-color 0.15s,color 0.15s;
+            `}
+            tabIndex={-1}
+            onMouseDown={(event) => { event.preventDefault(); setIsChevronActive(true); }}
+            onMouseUp={() => setIsChevronActive(false)}
+            onMouseLeave={() => setIsChevronActive(false)}
+            onClick={() => {
+              props.onOpenChange(!props.isOpen);
+              if (!props.isOpen) {
+                queueMicrotask(() => localInputRef?.focus());
+              }
+            }}
+          >
+            <span
+              style={`display:inline-block;transition:transform 0.2s ease;transform:rotate(${props.isOpen ? "180" : "0"}deg);line-height:1;`}
+            >
+              ▾
+            </span>
+          </button>
+        </div>
         {props.renderKeytip?.()}
       </div>
 

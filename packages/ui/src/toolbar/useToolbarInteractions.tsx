@@ -2,7 +2,6 @@ import { Show } from "solid-js";
 import { FORMATTING_TOOLBAR_KEYTIPS } from "@monoscape/document-core";
 import { buttonOrder } from "./constants";
 import type { ToolbarButtonId } from "./constants";
-import { TOOLBAR_STYLES } from "./styles";
 import { useToolbarKeytips } from "./useToolbarKeytips";
 
 interface ToolbarInteractionOptions {
@@ -86,7 +85,7 @@ export function useToolbarInteractions(options: ToolbarInteractionOptions) {
     if (!keytip) return null;
     return (
       <Show when={isKeytipMode()}>
-        <span data-toolbar-keytip="true" aria-hidden="true" style={TOOLBAR_STYLES.keytip}>
+        <span data-toolbar-keytip="true" aria-hidden="true" class="toolbar__keytip">
           {keytip}
         </span>
       </Show>

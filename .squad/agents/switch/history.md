@@ -60,11 +60,11 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 
 ### Key Architecture Patterns (Reusable Team-Wide)
 - Three-tier acceptance gate: AC definition → regression matrix + risk register → anti-pattern checklist before coding
-- SolidJS platform conditionals: `<Show when={condition}>` for desktop/mobile/web feature gating  
+- SolidJS platform conditionals: `<Show when={condition}>` for desktop/mobile/web feature gating
 - Tauri command security: Backend HTTP calls only (no client-side API keys); frontend invokes via registered command wrappers
 - app_data_dir for storage: ~/.monoscape/fonts/ (never /tmp, never user-specific temp)
 - FontFace API for dynamic fonts: load() + document.fonts.add()
-- ContentEditable selection preservation: event.preventDefault() on toolbar buttons  
+- ContentEditable selection preservation: event.preventDefault() on toolbar buttons
 - Roving tabindex for keyboard nav: one tabIndex=0, rest -1, arrow keys move focus
 
 ## Learnings Detail
@@ -99,3 +99,4 @@ Switch is responsible for defining comprehensive three-tier acceptance gates for
 - **[2026-04-21T23:11:15Z] Scribe Session — Keytip Proof Cycle Orchestration:** New cycle for keytip trap revision with updated product decision. Escape-exit model now approved: Tab/Shift+Tab indentation preserved in editor; Escape as explicit exit to toolbar; Alt keytips unchanged. Neo assigned to implement keyboard model; Morpheus reassigned for next-cycle keytip proof refinement. Orchestration logs recorded: .squad/orchestration-log/2026-04-21T23-11-15Z-{neo,switch,morpheus}.md. Session log: .squad/log/2026-04-21T23-11-15Z-latest-keytip-rejection.md. Decision #35 merged (Neo — Keytip Trap Revision). Switch ready to verify end-to-end proof that Tab/Shift+Tab never land on toolbar controls and model avoids keyboard trap before approval. Trinity remains locked out; Neo begins implementation work immediately.
 
 - **[2026-05-02T15:22:25Z] Editor Toolbar Refactor — Regression Gate & Approval:** Switch defined and executed comprehensive regression gate for editor toolbar refactor: (1) Gate definition (switch-editor-regression.md) — 5 blockers (source refactor ≤250 lines, compact UI, advanced color picker, APA/MLA presets, keyboard flow). Regression test matrix: 21 existing + 23 new tests covering typography, layout, color conversions, style application, keyboard flows. (2) Initial review verdict (switch-review-verdict.md) — REJECTED Trinity's implementation on 4 blockers: color picker wheel/pyramid stubbed, FormattingToolbar.tsx 339 lines, 12 test failures, 23 new tests missing. Reassigned to Morpheus; Trinity locked out. (3) Final review verdict (switch-final-review.md) — APPROVED Morpheus's revision: all blockers resolved (color wheel/pyramid fully implemented, FormattingToolbar 210 lines, TextEditor 249 lines, all 19 tests pass, test coverage sufficient). Orchestration logs recorded: .squad/orchestration-log/2026-05-02T15-22-25Z-switch.md. Decisions merged (#32–#34). Final verdict: MERGE-READY.
+- **[2026-05-10T17:18:44Z] Desktop welcome/file-service validation strategy:** Feature-owned validation for the desktop welcome shell + file-service slice can rely on `npm --workspace @monoscape/app-desktop run typecheck`, `npm --workspace @monoscape/ui run typecheck`, and `cargo check` when broader `@monoscape/ui` tests stay red in unrelated pre-existing editor/toolbar areas. Gate focus should stay on session swapping, welcome routing, and the desktop adapter/native boundary rather than unrelated toolbar regressions. Decisions #39–#40 aligned to that scope.

@@ -1,11 +1,9 @@
 // Font family picker dropdown
 
 import { For, Show, createEffect, createSignal, type JSX } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
-import { sortFontCatalog, FONT_CATEGORY_LABELS } from "@monoscape/document-core";
-import type { FontCatalogEntry, FontCategory } from "@monoscape/document-core";
-
-type FontFilter = "all" | FontCategory;
+import { DEFAULT_TYPOGRAPHY, FONT_CATEGORY_LABELS } from "@monoscape/document-core";
+import type { FontCatalogEntry } from "@monoscape/document-core";
+import { type FontFilter, FONT_CATEGORY_OPTIONS, getVisibleFonts } from "./pickers/fontPickerUtils";
 
 interface FontPickerDropdownProps {
   fonts: FontCatalogEntry[];
@@ -30,33 +28,12 @@ interface FontPickerDropdownProps {
 export function FontPickerDropdown(props: FontPickerDropdownProps) {
   const [filter, setFilter] = createSignal<FontFilter>("all");
   const [searchQuery, setSearchQuery] = createSignal("");
+  const [isHovered, setIsHovered] = createSignal(false);
+  const [isTriggerActive, setIsTriggerActive] = createSignal(false);
   let searchInputRef: HTMLInputElement | undefined;
   const panelId = "monoscape-font-panel";
 
-  const categoryOptions: Array<{ value: FontFilter; label: string }> = [
-    { value: "all", label: "All types" },
-    ...Object.entries(FONT_CATEGORY_LABELS)
-      .sort((left, right) => left[1].localeCompare(right[1]))
-      .map(([value, label]) => ({ value: value as FontCategory, label }))
-  ];
-
-  const visibleFonts = () => {
-    const currentFont = props.fonts.find((font) => font.family === props.selectedFontFamily);
-    const filteredByCategory =
-      filter() === "all"
-        ? props.fonts
-        : props.fonts.filter((font) => font.category === filter());
-    const query = searchQuery().trim().toLowerCase();
-    const filtered = query
-      ? filteredByCategory.filter((font) => font.family.toLowerCase().includes(query))
-      : filteredByCategory;
-
-    if (!currentFont || filtered.some((font) => font.family === currentFont.family)) {
-      return filtered;
-    }
-
-    return sortFontCatalog([currentFont, ...filtered]);
-  };
+  const visibleFonts = () => getVisibleFonts(props.fonts, props.selectedFontFamily, filter(), searchQuery());
 
   const canAddFonts = () =>
     Boolean(
@@ -101,7 +78,7 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
   }
 
   const selectedCategoryLabel = () => {
-    if (!props.selectedFontFamily) return "Mixed selection";
+    if (!props.selectedFontFamily) return "";
     const entry = props.fonts.find((f) => f.family === props.selectedFontFamily);
     return entry ? FONT_CATEGORY_LABELS[entry.category] : "";
   };
@@ -112,33 +89,48 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
     }
   });
 
-  const fontTriggerStyle =
+  const fontTriggerBorderColor = () => {
+    if (props.isOpen) return "#005fcc";
+    if (isHovered()) return "#8a90a0";
+    return "#c3cad8";
+  };
+
+  const fontTriggerStyle = () =>
     "display:flex;align-items:center;justify-content:space-between;gap:12px;height:42px;min-width:280px;" +
-    "padding:0 14px;border:1px solid #c3cad8;border-radius:12px;background:#f7f9fc;" +
-    "color:#172033;font:inherit;cursor:pointer;";
+    `padding:0 14px;border:1px solid ${fontTriggerBorderColor()};border-radius:12px;` +
+    `background:${isTriggerActive() ? "#dce8ff" : props.isOpen ? "#eef4ff" : "#f7f9fc"};` +
+    "color:#172033;font:inherit;cursor:pointer;" +
+    `box-shadow:${props.isOpen ? "0 0 0 2px rgba(0,95,204,0.2)" : "none"};` +
+    "transition:border-color 0.15s,background 0.15s,box-shadow 0.15s;";
 
   return (
     <div ref={props.containerRef} style="position: relative; display: inline-flex;">
       <button
         ref={(el) => props.triggerRef?.(el)}
-        aria-label={`Font family: ${props.selectedFontFamily ?? "Mixed"}`}
+        aria-label={`Font family: ${props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}`}
         aria-controls={panelId}
         aria-expanded={props.isOpen}
         tabIndex={-1}
-        style={fontTriggerStyle}
-        onMouseDown={(event) => event.preventDefault()}
+        style={fontTriggerStyle()}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => { setIsHovered(false); setIsTriggerActive(false); }}
+        onMouseDown={(event) => { event.preventDefault(); setIsTriggerActive(true); }}
+        onMouseUp={() => setIsTriggerActive(false)}
         onClick={() => props.onOpenChange(!props.isOpen)}
         onKeyDown={handleTriggerKeyDown}
       >
         <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
           <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">
-            {props.selectedFontFamily ?? "Mixed"}
+            {props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}
           </span>
-          <span style="font-size:0.8rem;color:#52607a;">
+          <span style={`font-size:0.8rem;color:${props.isOpen ? "#005fcc" : "#52607a"};transition:color 0.15s;`}>
             {selectedCategoryLabel()}
           </span>
         </span>
-        <span aria-hidden="true" style="font-size:0.8rem;color:#52607a;">▾</span>
+        <span
+          aria-hidden="true"
+          style={`font-size:1rem;color:${props.isOpen ? "#005fcc" : "#52607a"};display:inline-block;transition:transform 0.2s ease,color 0.15s;transform:rotate(${props.isOpen ? "180" : "0"}deg);`}
+        >▾</span>
         {props.renderKeytip?.()}
       </button>
 
@@ -163,7 +155,7 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
                   (props.selectedFontFamily ? `font-family:${props.selectedFontFamily};` : "")
                 }
               >
-                {props.selectedFontFamily ?? "Mixed"}
+                {props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}
               </span>
             </div>
             <label style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
@@ -174,7 +166,7 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
                 onChange={(e) => setFilter(e.currentTarget.value as FontFilter)}
                 style="height:34px;padding:0 10px;border:1px solid #c3cad8;border-radius:10px;background:#f7f9fc;color:#172033;font:inherit;font-size:0.9rem;"
               >
-                <For each={categoryOptions}>
+                <For each={FONT_CATEGORY_OPTIONS}>
                   {(option) => <option value={option.value}>{option.label}</option>}
                 </For>
               </select>
