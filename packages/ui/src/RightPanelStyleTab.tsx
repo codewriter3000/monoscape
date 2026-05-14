@@ -5,8 +5,6 @@ import {
   PARA_STYLES,
   HIGHLIGHT_COLORS,
   styleChip,
-  segmentButton,
-  segmentButtonLast,
   compactNumInput,
   Divider,
   SectionWrap,
@@ -14,6 +12,7 @@ import {
   type UnderlineStyle,
   type BaselineMode
 } from "./rightPanelHelpers";
+import { SegmentedControl } from "./SegmentedControl";
 
 export function RightPanelStyleTab() {
   const [paraStyle, setParaStyle] = createSignal("normal");
@@ -46,18 +45,16 @@ export function RightPanelStyleTab() {
       {/* Text case */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Text Case</p>
-        <div style="display: flex;">
-          {(["none", "uppercase", "lowercase", "capitalize"] as TextCaseMode[]).map((c, i, arr) => {
-            const isLast = i === arr.length - 1;
-            const isFirst = i === 0;
-            const pos = isFirst ? "left" : isLast ? "right" : "middle";
-            const labels: Record<TextCaseMode, string> = { none: "Aa", uppercase: "AA", lowercase: "aa", capitalize: "Tt" };
-            const titles: Record<TextCaseMode, string> = { none: "As typed", uppercase: "Uppercase", lowercase: "Lowercase", capitalize: "Capitalize" };
-            return isLast
-              ? <button type="button" title={titles[c]} style={segmentButtonLast(textCase() === c)} onClick={() => setTextCase(c)}>{labels[c]}</button>
-              : <button type="button" title={titles[c]} style={segmentButton(textCase() === c, pos as "left" | "middle")} onClick={() => setTextCase(c)}>{labels[c]}</button>;
-          })}
-        </div>
+        <SegmentedControl
+          options={[
+            { value: "none" as TextCaseMode,       label: "Aa", title: "As typed" },
+            { value: "uppercase" as TextCaseMode,   label: "AA", title: "Uppercase" },
+            { value: "lowercase" as TextCaseMode,   label: "aa", title: "Lowercase" },
+            { value: "capitalize" as TextCaseMode,  label: "Tt", title: "Capitalize" },
+          ]}
+          value={textCase()}
+          onChange={setTextCase}
+        />
       </SectionWrap>
 
       {/* Underline style */}
@@ -82,18 +79,15 @@ export function RightPanelStyleTab() {
       {/* Baseline */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Baseline</p>
-        <div style="display: flex;">
-          {(["normal", "super", "sub"] as BaselineMode[]).map((b, i, arr) => {
-            const isLast = i === arr.length - 1;
-            const isFirst = i === 0;
-            const pos = isFirst ? "left" : isLast ? "right" : "middle";
-            const labels: Record<BaselineMode, string> = { normal: "Normal", super: "Superscript", sub: "Subscript" };
-            const icons: Record<BaselineMode, string> = { normal: "Baseline", super: "Xⁿ", sub: "Xₙ" };
-            return isLast
-              ? <button type="button" title={labels[b]} style={segmentButtonLast(baseline() === b)} onClick={() => setBaseline(b)}>{icons[b]}</button>
-              : <button type="button" title={labels[b]} style={segmentButton(baseline() === b, pos as "left" | "middle")} onClick={() => setBaseline(b)}>{icons[b]}</button>;
-          })}
-        </div>
+        <SegmentedControl
+          options={[
+            { value: "normal" as BaselineMode, label: "Baseline", title: "Normal" },
+            { value: "super"  as BaselineMode, label: "Xⁿ",       title: "Superscript" },
+            { value: "sub"    as BaselineMode, label: "Xₙ",        title: "Subscript" },
+          ]}
+          value={baseline()}
+          onChange={setBaseline}
+        />
       </SectionWrap>
 
       <Divider />

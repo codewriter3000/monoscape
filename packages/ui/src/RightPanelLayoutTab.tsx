@@ -5,8 +5,6 @@ import {
   BREAK_TYPES,
   fieldInput,
   compactNumInput,
-  segmentButton,
-  segmentButtonLast,
   Divider,
   SectionWrap,
   type PageOrientation,
@@ -16,6 +14,7 @@ import {
   type LineNumberMode,
   type HyphenationMode
 } from "./rightPanelHelpers";
+import { SegmentedControl } from "./SegmentedControl";
 
 export function RightPanelLayoutTab() {
   const [orientation, setOrientation] = createSignal<PageOrientation>("portrait");
@@ -58,14 +57,14 @@ export function RightPanelLayoutTab() {
         <p style={SECTION_TITLE}>Page</p>
         <div style="margin-bottom: 8px;">
           <span style={FIELD_LABEL}>Orientation</span>
-          <div style="display: flex;">
-            <button type="button" style={segmentButton(orientation() === "portrait", "left")} onClick={() => setOrientation("portrait")}>
-              ▯ Portrait
-            </button>
-            <button type="button" style={segmentButtonLast(orientation() === "landscape")} onClick={() => setOrientation("landscape")}>
-              ▭ Landscape
-            </button>
-          </div>
+          <SegmentedControl
+            options={[
+              { value: "portrait"  as PageOrientation, label: "▯ Portrait" },
+              { value: "landscape" as PageOrientation, label: "▭ Landscape" },
+            ]}
+            value={orientation()}
+            onChange={setOrientation}
+          />
         </div>
         <div>
           <span style={FIELD_LABEL}>Paper size</span>
@@ -121,11 +120,15 @@ export function RightPanelLayoutTab() {
       {/* Columns */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Columns</p>
-        <div style="display: flex;">
-          <button type="button" style={segmentButton(columns() === 1, "left")} onClick={() => setColumns(1)}>⬜ One</button>
-          <button type="button" style={segmentButton(columns() === 2, "middle")} onClick={() => setColumns(2)}>⬜⬜ Two</button>
-          <button type="button" style={segmentButtonLast(columns() === 3)} onClick={() => setColumns(3)}>⬜⬜⬜ Three</button>
-        </div>
+        <SegmentedControl
+          options={[
+            { value: 1 as ColumnCount, label: "⬜ One" },
+            { value: 2 as ColumnCount, label: "⬜⬜ Two" },
+            { value: 3 as ColumnCount, label: "⬜⬜⬜ Three" },
+          ]}
+          value={columns()}
+          onChange={setColumns}
+        />
       </SectionWrap>
 
       {/* Breaks */}
@@ -145,21 +148,29 @@ export function RightPanelLayoutTab() {
       {/* Line numbers */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Line Numbers</p>
-        <div style="display: flex;">
-          <button type="button" style={segmentButton(lineNumbers() === "none", "left")} onClick={() => setLineNumbers("none")}>None</button>
-          <button type="button" style={segmentButton(lineNumbers() === "continuous", "middle")} onClick={() => setLineNumbers("continuous")}>Continuous</button>
-          <button type="button" style={segmentButtonLast(lineNumbers() === "perPage")} onClick={() => setLineNumbers("perPage")}>Per page</button>
-        </div>
+        <SegmentedControl
+          options={[
+            { value: "none"       as LineNumberMode, label: "None" },
+            { value: "continuous" as LineNumberMode, label: "Continuous" },
+            { value: "perPage"    as LineNumberMode, label: "Per page" },
+          ]}
+          value={lineNumbers()}
+          onChange={setLineNumbers}
+        />
       </SectionWrap>
 
       {/* Hyphenation */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Hyphenation</p>
-        <div style="display: flex;">
-          <button type="button" style={segmentButton(hyphenation() === "none", "left")} onClick={() => setHyphenation("none")}>None</button>
-          <button type="button" style={segmentButton(hyphenation() === "auto", "middle")} onClick={() => setHyphenation("auto")}>Auto</button>
-          <button type="button" style={segmentButtonLast(hyphenation() === "manual")} onClick={() => setHyphenation("manual")}>Manual</button>
-        </div>
+        <SegmentedControl
+          options={[
+            { value: "none"   as HyphenationMode, label: "None" },
+            { value: "auto"   as HyphenationMode, label: "Auto" },
+            { value: "manual" as HyphenationMode, label: "Manual" },
+          ]}
+          value={hyphenation()}
+          onChange={setHyphenation}
+        />
       </SectionWrap>
 
       <Divider />

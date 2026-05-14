@@ -90,6 +90,34 @@ describe("Typography formatting", () => {
     dispose();
   });
 
+  it("updates font size and line spacing inputs when the collapsed caret moves", async () => {
+    const { editor, fontSizeInput, lineSpacingInput, dispose } = renderEditor(host);
+
+    editor.innerHTML =
+      '<div style="line-height:1.5;"><span style="font-size:12pt;">Alpha</span></div>' +
+      '<div style="line-height:2;"><span style="font-size:18pt;">Beta</span></div>';
+
+    const firstText = editor.querySelector("div:first-of-type span")?.firstChild;
+    const secondText = editor.querySelector("div:last-of-type span")?.firstChild;
+    if (!firstText || !secondText) {
+      throw new Error("Expected text nodes for collapsed-caret toolbar sync test.");
+    }
+
+    selectRange(firstText, 1, firstText, 1);
+    await flushMicrotasks();
+
+    expect(fontSizeInput().value).toBe("12");
+    expect(lineSpacingInput().value).toBe("1.5");
+
+    selectRange(secondText, 1, secondText, 1);
+    await flushMicrotasks();
+
+    expect(fontSizeInput().value).toBe("18");
+    expect(lineSpacingInput().value).toBe("2");
+
+    dispose();
+  });
+
   it("keeps collapsed-caret typography active when typing resumes", async () => {
     const { editor, fontButton, fontSizeInput, dispose } = renderEditor(host);
 

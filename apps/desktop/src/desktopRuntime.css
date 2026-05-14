@@ -15,6 +15,8 @@ body,
   font-family: var(--mn-font-ui);
 }
 
+/* The body is the page-level scroll container.
+   Sticky toolbar and sidebar rely on this being overflow-y: auto (not hidden). */
 .desktop-runtime__body {
   flex: 1;
   min-height: 0;
@@ -23,6 +25,16 @@ body,
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* Offset sticky elements by the body's top padding so they align cleanly */
+.desktop-runtime__body .monoscape-toolbar {
+  top: 16px;
+}
+
+.desktop-runtime__body .monoscape-shell__secondary {
+  top: 16px;
+  max-height: calc(100vh - 32px);
 }
 
 .desktop-runtime__surface {

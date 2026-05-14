@@ -12,6 +12,57 @@ const readFontSizeInPoints = (value: string) => {
     : Math.round(parsed);
 };
 
+const descendToLeafNode = (node: Node, preferLast: boolean) => {
+  let current = node;
+
+  while (current.childNodes.length) {
+    current = preferLast
+      ? current.childNodes[current.childNodes.length - 1] ?? current
+      : current.childNodes[0] ?? current;
+  }
+
+  return current;
+};
+
+const resolveCollapsedSampleNode = (range: Range) => {
+  if (range.startContainer.nodeType === Node.TEXT_NODE) {
+    return range.startContainer;
+  }
+
+  const container = range.startContainer;
+  const childNodes = container.childNodes;
+  if (!childNodes.length) {
+    return container;
+  }
+
+  if (range.startOffset >= childNodes.length) {
+    const previousNode = childNodes[childNodes.length - 1];
+    return previousNode ? descendToLeafNode(previousNode, true) : container;
+  }
+
+  const currentNode = childNodes[range.startOffset];
+  if (currentNode) {
+    return descendToLeafNode(currentNode, false);
+  }
+
+  const previousNode = childNodes[range.startOffset - 1];
+  return previousNode ? descendToLeafNode(previousNode, true) : container;
+};
+
+const readExplicitFontSizeValue = (node: Node | null, editorRef: HTMLDivElement) => {
+  const element = node instanceof HTMLElement ? node : node?.parentElement ?? editorRef;
+  let current: HTMLElement | null = element;
+
+  while (current && current !== editorRef) {
+    if (current.style.fontSize) {
+      return current.style.fontSize;
+    }
+    current = current.parentElement;
+  }
+
+  return getComputedStyle(element).fontSize || getComputedStyle(editorRef).fontSize;
+};
+
 export interface ToolbarSnapshotParams {
   typo: { fontFamily?: string | null; fontSize?: number | null } | null | undefined;
   colorValue: NormalizedColor | null;
@@ -25,6 +76,9 @@ export function buildToolbarSnapshot(params: ToolbarSnapshotParams): ToolbarSele
   const { typo, colorValue, lineSpacing, alignment, range, editorRef } = params;
   let fontFamily = typo?.fontFamily ?? null;
   let fontSize = typo?.fontSize ?? null;
+  if (range?.collapsed && editorRef) {
+    fontSize = readFontSizeInPoints(readExplicitFontSizeValue(resolveCollapsedSampleNode(range), editorRef));
+  }
   if (range && editorRef) {
     const segments = collectTextSegments(range, editorRef).filter(({ node }) => node.data.trim().length);
     if (segments.length) {

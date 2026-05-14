@@ -1,8 +1,8 @@
 .desktop-welcome {
   min-height: 100%;
   display: grid;
-  gap: 22px;
-  padding: 28px;
+  gap: 16px;
+  padding: 20px;
   border: 1px solid var(--mn-border);
   border-radius: 28px;
   background:
@@ -12,14 +12,17 @@
 }
 
 .desktop-welcome__hero {
-  display: grid;
-  gap: 18px;
-  /* grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); */
+  display: flex;
+  gap: 12px;
   align-items: stretch;
 }
 
 .desktop-welcome__panel {
-  padding: 24px;
+  flex: 1;
+  justify-self: stretch;
+  align-self: stretch;
+  align-items: center;
+  padding: 18px;
   border: 1px solid rgba(82, 96, 122, 0.18);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.88);
@@ -37,13 +40,13 @@
 
 .desktop-welcome__title {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(1.75rem, 2.5vw, 2.5rem);
   line-height: 1.05;
-  color: var(--mn-text);
+  color: var(--mn-brand-dark);
 }
 
 .desktop-welcome__copy {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   max-width: 36rem;
   color: var(--mn-text-muted);
   font-size: 1rem;
@@ -60,7 +63,7 @@
 }
 
 .desktop-welcome__action-row {
-  margin-top: 22px;
+  margin-top: 16px;
 }
 
 .desktop-welcome__button,
@@ -78,8 +81,8 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 46px;
-  padding: 0 16px;
+  min-height: 40px;
+  padding: 0 14px;
   border: 1px solid #c8d2e2;
   border-radius: 16px;
   background: var(--mn-surface);
@@ -97,7 +100,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #005fcc;
+  background: #005fcc44;
   transform: translateY(-50%);
   pointer-events: none;
   opacity: 0;
@@ -142,7 +145,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #4d9fbd;
+  background: #4d9fbd44;
   transform: translateY(-50%);
   pointer-events: none;
   opacity: 0;

@@ -15,7 +15,7 @@ interface ColorPickerDropdownProps {
 }
 
 export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
-  const [model, setModel] = createSignal<ColorModel>("hex");
+  const [model, setModel] = createSignal<ColorModel>("rgba");
   const [pickerMode, setPickerMode] = createSignal<ColorPickerMode>("input");
   const [colorDraft, setColorDraft] = createSignal("");
   const [isHovered, setIsHovered] = createSignal(false);
@@ -194,6 +194,9 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
             }}
             type="button"
             aria-label="Open color picker"
+            aria-controls="monoscape-color-panel"
+            aria-expanded={props.isOpen}
+            aria-haspopup="dialog"
             tabIndex={-1}
             style={`display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;min-height:42px;align-self:stretch;border:none;border-left:1px solid ${borderColor()};background:#f7f9fc;color:#52607a;font:inherit;cursor:pointer;transition:background 0.15s,border-color 0.15s;`}
             onClick={() => props.onOpenChange(!props.isOpen)}

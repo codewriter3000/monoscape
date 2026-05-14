@@ -3,6 +3,14 @@
 export const EDITOR_KEYBOARD_HELP_ID = "monoscape-editor-help";
 
 export const EDITOR_STYLES = `
+  .monoscape-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f6f8fb;
+    border-radius: 18px 18px 0 0;
+  }
+
   .monoscape-editor-frame {
     display: flex;
     justify-content: center;
@@ -29,6 +37,12 @@ export const EDITOR_STYLES = `
   .monoscape-editor:focus,
   .monoscape-editor:focus-visible {
     box-shadow: 0 0 0 3px #4a90d9, 0 22px 40px rgba(15,23,42,0.12);
+  }
+
+  /* Visual indicator when an icon span is the "active" selection */
+  [data-monoscape-icon-selected] {
+    outline: 2px solid #005fcc;
+    border-radius: 2px;
   }
 
   @media (forced-colors: active) {

@@ -1,9 +1,9 @@
-import { Show, createMemo, createSignal, onMount } from "solid-js";
+import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { defaultWorkflowTemplates } from "@monoscape/document-core";
 import { citationsExtension } from "@monoscape/extension-citations";
 import { reviewExtension } from "@monoscape/extension-review";
 import { createBootstrapPlan } from "@monoscape/kernel";
-import { MonoscapeShell, RightPanel, TextEditor } from "@monoscape/ui";
+import { MonoscapeShell, RightPanel, TextEditor, type ListState, type BulletStyle, type NumberStyle } from "@monoscape/ui";
 import { DesktopTopbar } from "./DesktopTopbar";
 import { desktopDocumentFileIO, type RecentDesktopDocument } from "./documentFileIO";
 import { desktopFontCapabilities } from "./fontSources";
@@ -49,6 +49,19 @@ export function DesktopApp() {
     const session = activeSession();
     return !!session && session.editorHtml !== session.savedHtml;
   });
+
+  // Bridge: list actions registered by TextEditor, consumed by RightPanel.
+  // Hoisted to component scope (not inside Show) so the signal has a stable reactive owner.
+  const [listActions, setListActions] = createSignal<{
+    listState: () => ListState;
+    toggleUnorderedList: () => void;
+    toggleOrderedList: () => void;
+    applyBulletStyle: (style: BulletStyle) => void;
+    applyNumberStyle: (style: NumberStyle) => void;
+    applyStartNumber: (n: number) => void;
+    applyCustomIconBullet: (svg: string) => void;
+    removeCustomIconBullet: () => void;
+  } | undefined>(undefined);
 
   const setStatus = (text: string, tone: StatusTone = "neutral") => {
     setStatusMessage({ text, tone });
@@ -124,6 +137,47 @@ export function DesktopApp() {
       activeSession
     });
 
+  onMount(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
+
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case "n":
+          event.preventDefault();
+          enterWelcomeMode();
+          return;
+        case "o":
+          event.preventDefault();
+          void openDocument();
+          return;
+        case "s":
+          event.preventDefault();
+          void saveCurrentSession("save");
+          return;
+        case "p":
+          event.preventDefault();
+          if (isEditorMode()) {
+            printCurrentSession();
+          }
+          return;
+        default:
+          return;
+      }
+    };
+
+    document.addEventListener("keydown", handleShortcut);
+
+    onCleanup(() => {
+      document.removeEventListener("keydown", handleShortcut);
+    });
+  });
+
   return (
     <div class="desktop-runtime">
       <DesktopTopbar
@@ -163,7 +217,12 @@ export function DesktopApp() {
               />
             }
           >
-            {(session) => (
+            {(session) => {
+              // Bridge: TextEditor registers its insert-icon function here;
+              // RightPanel calls it via onInsertSvg.
+              let insertIconRef: ((svg: string, name: string) => void) | undefined;
+
+              return (
               <MonoscapeShell
                 platform="desktop"
                 title="Monoscape Desktop"
@@ -174,9 +233,23 @@ export function DesktopApp() {
                     initialDocumentHtml={session().editorHtml}
                     onDocumentChange={updateCurrentSessionFromEditor}
                     fontCapabilities={desktopFontCapabilities}
+                    onRegisterInsertIcon={(fn) => { insertIconRef = fn; }}
+                    onRegisterListActions={(actions) => setListActions(actions)}
                   />
                 }
-                secondary={<RightPanel />}
+                secondary={
+                  <RightPanel
+                    onInsertSvg={(svg, name) => insertIconRef?.(svg, name)}
+                    listState={listActions()?.listState()}
+                    onToggleUnorderedList={() => listActions()?.toggleUnorderedList()}
+                    onToggleOrderedList={() => listActions()?.toggleOrderedList()}
+                    onSetListBulletStyle={(s) => listActions()?.applyBulletStyle(s)}
+                    onSetListNumberStyle={(s) => listActions()?.applyNumberStyle(s)}
+                    onSetListStartNumber={(n) => listActions()?.applyStartNumber(n)}
+                    onSetCustomIconBullet={(svg) => listActions()?.applyCustomIconBullet(svg)}
+                    onRemoveCustomIconBullet={() => listActions()?.removeCustomIconBullet()}
+                  />
+                }
                 utilities={
                   <div class="desktop-runtime__utilities">
                     <div class="desktop-runtime__utility-block">
@@ -198,7 +271,8 @@ export function DesktopApp() {
                   </div>
                 }
               />
-            )}
+              );
+            }}
           </Show>
         </div>
       </div>

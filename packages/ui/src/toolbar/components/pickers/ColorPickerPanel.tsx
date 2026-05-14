@@ -3,7 +3,7 @@ import { ColorFormatInputs } from "../ColorFormatInputs";
 import { ColorWheel } from "../ColorWheel";
 import { ColorPyramid } from "../ColorPyramid";
 import { ColorSquare } from "../ColorSquare";
-import { modeButtonStyle, pickerModeButtonStyle } from "./colorPickerUtils";
+import { SegmentedControl } from "../../../SegmentedControl";
 import type { NormalizedColor, ColorModel, ColorPickerMode } from "@monoscape/document-core";
 
 interface ColorPickerPanelProps {
@@ -21,6 +21,8 @@ interface ColorPickerPanelProps {
 }
 
 export function ColorPickerPanel(props: ColorPickerPanelProps) {
+  const previewLabelStyle = "font-size:0.75rem;font-weight:600;color:#52607a;margin-bottom:8px;";
+
   return (
     <div
       role="dialog"
@@ -33,40 +35,31 @@ export function ColorPickerPanel(props: ColorPickerPanelProps) {
       onKeyDown={props.onKeyDown}
     >
       {/* Mode switcher: RGBA / HSL / HSV / HEX */}
-      <div style="display: flex; gap: 4px; margin-bottom: 12px; padding: 8px 8px 0;">
-        {(["rgba", "hsl", "hsv", "hex"] as ColorModel[]).map((m) => (
-          <button type="button" style={modeButtonStyle(props.model === m)} onClick={() => props.onModelChange(m)}>
-            {m.toUpperCase()}
-          </button>
-        ))}
+      <div style="padding: 8px 8px 0; margin-bottom: 12px;">
+        <SegmentedControl
+          variant="chip"
+          options={[
+            { value: "rgba" as ColorModel, label: "RGBA" },
+            { value: "hsl"  as ColorModel, label: "HSL" },
+            { value: "hsv"  as ColorModel, label: "HSV" },
+            { value: "hex"  as ColorModel, label: "HEX" },
+          ]}
+          value={props.model}
+          onChange={props.onModelChange}
+        />
       </div>
 
       {/* Picker mode switcher: Wheel / Pyramid / Square */}
-      <div style="display: flex; gap: 0; margin-bottom: 12px; padding: 0 8px;">
-        <button
-          type="button"
-          data-picker-mode="wheel"
-          style={pickerModeButtonStyle(props.pickerMode === "wheel") + "border-top-right-radius: 0; border-bottom-right-radius: 0;"}
-          onClick={() => props.onPickerModeChange("wheel")}
-        >
-          Wheel
-        </button>
-        <button
-          type="button"
-          data-picker-mode="pyramid"
-          style={pickerModeButtonStyle(props.pickerMode === "pyramid") + `border-radius: 0;${props.pickerMode !== "pyramid" ? " border-left: none;" : ""}`}
-          onClick={() => props.onPickerModeChange("pyramid")}
-        >
-          Pyramid
-        </button>
-        <button
-          type="button"
-          data-picker-mode="input"
-          style={pickerModeButtonStyle(props.pickerMode === "input") + `border-top-left-radius: 0; border-bottom-left-radius: 0;${props.pickerMode !== "input" ? " border-left: none;" : ""}`}
-          onClick={() => props.onPickerModeChange("input")}
-        >
-          Square
-        </button>
+      <div style="padding: 0 8px; margin-bottom: 12px;">
+        <SegmentedControl
+          options={[
+            { value: "wheel"   as ColorPickerMode, label: "Wheel",   title: "Wheel" },
+            { value: "pyramid" as ColorPickerMode, label: "Pyramid", title: "Pyramid" },
+            { value: "input"   as ColorPickerMode, label: "Square",  title: "Square" },
+          ]}
+          value={props.pickerMode}
+          onChange={props.onPickerModeChange}
+        />
       </div>
 
       <div style="padding: 8px 8px 0;">
@@ -86,7 +79,7 @@ export function ColorPickerPanel(props: ColorPickerPanelProps) {
 
       {/* Current color preview with transparency pattern */}
       <div style="padding: 8px; margin-top: 8px; border-top: 1px solid #e5e8ed;">
-        <div style={TOOLBAR_STYLES.label}>Preview</div>
+        <div style={previewLabelStyle}>Preview</div>
         <div
           style={`
             width: 100%;

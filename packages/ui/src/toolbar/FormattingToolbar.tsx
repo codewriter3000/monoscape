@@ -49,8 +49,8 @@ interface FormattingToolbarProps {
 export function FormattingToolbar(props: FormattingToolbarProps) {
   const toolbarState = useFormattingToolbarState({
     editorRef: props.editorRef,
-    selectedFontSize: props.selectedFontSize,
-    selectedLineSpacing: props.selectedLineSpacing,
+    selectedFontSize: () => props.selectedFontSize,
+    selectedLineSpacing: () => props.selectedLineSpacing,
     onFontSizeChange: props.onFontSizeChange,
     onLineSpacingChange: props.onLineSpacingChange
   });
@@ -82,8 +82,9 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
   const fontSizeListId = "monoscape-font-size-list";
   const lineSpacingListId = "monoscape-line-spacing-list";
 
-  const fontSizePlaceholder = "Size";
-  const lineSpacingPlaceholder = "Spacing";
+  const fontSizePlaceholder = () => (props.selectedFontSize === null ? "Mixed" : "Size");
+  const lineSpacingPlaceholder = () =>
+    props.selectedLineSpacing === null ? "Mixed" : "Spacing";
 
   onMount(() => {
     props.registerPrimaryFocusTarget?.(() => fontTriggerRef?.focus());
@@ -144,7 +145,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         getOptionValue={(opt) => String(opt)}
         getOptionLabel={(opt) => `${opt}pt`}
         label="Font size"
-        placeholder={fontSizePlaceholder}
+        placeholder={fontSizePlaceholder()}
         ariaLabel="Font size"
         listId={fontSizeListId}
         error={toolbarState.fontSizeError()}
@@ -164,7 +165,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         getOptionValue={(opt) => formatLineSpacingValue(opt)}
         getOptionLabel={(opt) => labelLineSpacingOption(opt)}
         label="Line spacing"
-        placeholder={lineSpacingPlaceholder}
+        placeholder={lineSpacingPlaceholder()}
         ariaLabel="Line spacing"
         listId={lineSpacingListId}
         error={toolbarState.lineSpacingError()}
@@ -232,6 +233,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         onIndent={props.onIndent}
         onOutdent={props.onOutdent}
       />
+
       </div>
     </div>
   );

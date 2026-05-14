@@ -1,6 +1,6 @@
 import type { JSX } from "solid-js";
 
-export type RightPanelTab = "insert" | "style" | "layout";
+export type RightPanelTab = "insert" | "style" | "list" | "layout";
 export type PageOrientation = "portrait" | "landscape";
 export type PaperSize = "letter" | "a4" | "legal" | "a3" | "a5" | "tabloid";
 export type MarginPreset = "normal" | "narrow" | "wide" | "custom";

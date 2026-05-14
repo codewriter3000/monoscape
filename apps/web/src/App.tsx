@@ -20,13 +20,19 @@ const webBootstrapPlan = createBootstrapPlan(
 const seed = createWorkspaceSeed("Freshman composition draft", "essay");
 
 export function App() {
+  let insertIconRef: ((svg: string, name: string) => void) | undefined;
+
   return (
     <MonoscapeShell
       platform="web"
       title="Monoscape"
       subtitle="Shared UI preview for the editor kernel and extension system."
-      primary={<TextEditor />}
-      secondary={<RightPanel />}
+      primary={
+        <TextEditor
+          onRegisterInsertIcon={(fn) => { insertIconRef = fn; }}
+        />
+      }
+      secondary={<RightPanel onInsertSvg={(svg, name) => insertIconRef?.(svg, name)} />}
       utilities={
         <p style="margin:0;">
           Previewing {seed.title} with {webBootstrapPlan.extensionQueue.length} extensions staged. Keep

@@ -21,8 +21,7 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
     <section class="desktop-welcome" aria-label="Welcome screen">
 
       <div class="desktop-welcome__hero">
-        <div class="desktop-welcome__panel">
-          {/* <p class="desktop-welcome__eyebrow">Welcome, Alex</p> */}
+        <div class="desktop-welcome__panel" style="padding-left: 20%; align-content: center;">
           <h1 class="desktop-welcome__title">Your new word processing experience starts now.</h1>
           <p class="desktop-welcome__copy">
             Pick the starting point best suited for you.
@@ -83,12 +82,20 @@ export function WelcomeScreen(props: WelcomeScreenProps) {
       </div>
 
       {/* <WelcomeTemplateGrid onCreateFromTemplate={props.onCreateFromTemplate} /> */}
-
-      <WelcomeRecentSection
-        loadingRecentDocuments={props.loadingRecentDocuments}
-        recentDocuments={props.recentDocuments}
-        onOpenRecent={props.onOpenRecent}
-      />
+      <Show when={props.recentDocuments.length > 0} fallback={(
+        <div class="desktop-welcome__hero">
+          <div class="desktop-welcome__panel" style="padding-left: 20%; align-content: center;">
+            <h2 class="desktop-welcome__title">No recent documents</h2>
+            <p class="desktop-welcome__copy">Your past documents will appear here.</p>
+          </div>
+        </div>
+      )}>
+        <WelcomeRecentSection
+          loadingRecentDocuments={props.loadingRecentDocuments}
+          recentDocuments={props.recentDocuments}
+          onOpenRecent={props.onOpenRecent}
+        />
+      </Show>
     </section>
   );
 }

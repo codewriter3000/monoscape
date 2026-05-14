@@ -59,6 +59,19 @@ export function useTypographyFormatting(
   const [selectedTypography, setSelectedTypography] = createSignal<TypographySettings | null>(null);
   const [selectedColor, setSelectedColor] = createSignal<NormalizedColor | null>(null);
 
+  const readExplicitFontSizeValue = (element: HTMLElement, editor: HTMLDivElement) => {
+    let current: HTMLElement | null = element;
+
+    while (current && current !== editor) {
+      if (current.style.fontSize) {
+        return current.style.fontSize;
+      }
+      current = current.parentElement;
+    }
+
+    return "";
+  };
+
   const readTypographyFromNode = (node: Node | null): TypographySettings => {
     const editor = editorRef();
     if (!editor) return DEFAULT_TYPOGRAPHY;
@@ -66,10 +79,11 @@ export function useTypographyFormatting(
     const fallback = getComputedStyle(editor);
     const element = node instanceof HTMLElement ? node : node?.parentElement ?? editor;
     const styles = getComputedStyle(element);
+    const explicitFontSize = readExplicitFontSizeValue(element, editor);
 
     return {
       fontFamily: resolveKnownFontFamily(styles.fontFamily, fonts().map((font) => font.family)),
-      fontSize: readFontSizeInPoints(styles.fontSize || fallback.fontSize)
+      fontSize: readFontSizeInPoints(explicitFontSize || styles.fontSize || fallback.fontSize)
     };
   };
 
@@ -79,13 +93,25 @@ export function useTypographyFormatting(
 
     const element = node instanceof HTMLElement ? node : node?.parentElement ?? editor;
     const styles = getComputedStyle(element);
-    
+
     const color = styles.color;
     if (!color || color === "inherit" || color === getComputedStyle(editor).color) {
       return null;
     }
-    
+
     return color;
+  };
+
+  const descendToLeafNode = (node: Node, preferLast: boolean) => {
+    let current = node;
+
+    while (current.childNodes.length) {
+      current = preferLast
+        ? current.childNodes[current.childNodes.length - 1] ?? current
+        : current.childNodes[0] ?? current;
+    }
+
+    return current;
   };
 
   const resolveSampleNode = (range: Range) => {
@@ -99,7 +125,18 @@ export function useTypographyFormatting(
       return container;
     }
 
-    return childNodes[range.startOffset - 1] ?? childNodes[range.startOffset] ?? container;
+    if (range.startOffset >= childNodes.length) {
+      const previousNode = childNodes[childNodes.length - 1];
+      return previousNode ? descendToLeafNode(previousNode, true) : container;
+    }
+
+    const currentNode = childNodes[range.startOffset];
+    if (currentNode) {
+      return descendToLeafNode(currentNode, false);
+    }
+
+    const previousNode = childNodes[range.startOffset - 1];
+    return previousNode ? descendToLeafNode(previousNode, true) : container;
   };
 
   const readTypographyFromRange = (range: Range): TypographySettings => {
@@ -145,7 +182,7 @@ export function useTypographyFormatting(
 
     const colors = segments.map(({ node }) => readColorFromNode(node));
     const uniformColor = resolveUniformValue(colors);
-    
+
     return uniformColor ? { hex: uniformColor } as NormalizedColor : null;
   };
 

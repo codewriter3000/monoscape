@@ -31,7 +31,9 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
   const [isHovered, setIsHovered] = createSignal(false);
   const [isTriggerActive, setIsTriggerActive] = createSignal(false);
   let searchInputRef: HTMLInputElement | undefined;
+  let uploadInputRef: HTMLInputElement | undefined;
   const panelId = "monoscape-font-panel";
+  const displayFontFamily = () => props.selectedFontFamily ?? "Mixed";
 
   const visibleFonts = () => getVisibleFonts(props.fonts, props.selectedFontFamily, filter(), searchQuery());
 
@@ -78,9 +80,21 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
   }
 
   const selectedCategoryLabel = () => {
-    if (!props.selectedFontFamily) return "";
+    if (!props.selectedFontFamily) return "Mixed selection";
     const entry = props.fonts.find((f) => f.family === props.selectedFontFamily);
     return entry ? FONT_CATEGORY_LABELS[entry.category] : "";
+  };
+
+  const handleAddFonts = () => {
+    if (props.fontCapabilities?.uploadFonts && props.onUploadFonts) {
+      uploadInputRef?.click();
+      return;
+    }
+
+    if (props.fontCapabilities?.searchGoogleFonts) {
+      props.onOpenChange(true);
+      queueMicrotask(() => searchInputRef?.focus());
+    }
   };
 
   createEffect(() => {
@@ -107,7 +121,7 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
     <div ref={props.containerRef} style="position: relative; display: inline-flex;">
       <button
         ref={(el) => props.triggerRef?.(el)}
-        aria-label={`Font family: ${props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}`}
+        aria-label={`Font family: ${displayFontFamily()}`}
         aria-controls={panelId}
         aria-expanded={props.isOpen}
         tabIndex={-1}
@@ -121,7 +135,7 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
       >
         <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
           <span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">
-            {props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}
+            {displayFontFamily()}
           </span>
           <span style={`font-size:0.8rem;color:${props.isOpen ? "#005fcc" : "#52607a"};transition:color 0.15s;`}>
             {selectedCategoryLabel()}
@@ -155,22 +169,35 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
                   (props.selectedFontFamily ? `font-family:${props.selectedFontFamily};` : "")
                 }
               >
-                {props.selectedFontFamily ?? DEFAULT_TYPOGRAPHY.fontFamily}
+                {displayFontFamily()}
               </span>
             </div>
-            <label style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
-              <span style="font-size:0.75rem;font-weight:600;color:#52607a;">Filter</span>
-              <select
-                aria-label="Filter fonts by category"
-                value={filter()}
-                onChange={(e) => setFilter(e.currentTarget.value as FontFilter)}
-                style="height:34px;padding:0 10px;border:1px solid #c3cad8;border-radius:10px;background:#f7f9fc;color:#172033;font:inherit;font-size:0.9rem;"
+            <div style="display:flex;align-items:flex-end;gap:8px;">
+              <label style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+                <span style="font-size:0.75rem;font-weight:600;color:#52607a;">Filter</span>
+                <select
+                  aria-label="Filter fonts by category"
+                  value={filter()}
+                  onChange={(e) => setFilter(e.currentTarget.value as FontFilter)}
+                  style="height:34px;padding:0 10px;border:1px solid #c3cad8;border-radius:10px;background:#f7f9fc;color:#172033;font:inherit;font-size:0.9rem;"
+                >
+                  <For each={FONT_CATEGORY_OPTIONS}>
+                    {(option) => <option value={option.value}>{option.label}</option>}
+                  </For>
+                </select>
+              </label>
+              <button
+                type="button"
+                aria-label="Add fonts"
+                title={canAddFonts() ? "Add fonts" : "Font installs are only available on desktop."}
+                disabled={!canAddFonts()}
+                style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid #c3cad8;border-radius:10px;background:#f7f9fc;color:#172033;font:inherit;cursor:pointer;"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleAddFonts}
               >
-                <For each={FONT_CATEGORY_OPTIONS}>
-                  {(option) => <option value={option.value}>{option.label}</option>}
-                </For>
-              </select>
-            </label>
+                +
+              </button>
+            </div>
           </div>
 
           <input
@@ -253,6 +280,14 @@ export function FontPickerDropdown(props: FontPickerDropdownProps) {
               </For>
             </Show>
           </div>
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept=".ttf,.otf,.woff,.woff2"
+            multiple={true}
+            style="display:none"
+            onChange={(event) => void props.onUploadFonts?.(event.currentTarget.files)}
+          />
         </div>
       </Show>
     </div>

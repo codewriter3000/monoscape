@@ -3,6 +3,7 @@ import { appWindow } from "@tauri-apps/api/window";
 import "./topbar/desktopTopbar.css";
 import { DesktopSaveMenu } from "./topbar/DesktopSaveMenu";
 import { DesktopWindowControls } from "./topbar/DesktopWindowControls";
+import { isUntitledTitle } from "./desktopAppHelpers";
 
 interface DesktopTopbarProps {
   extensionCount: number;
@@ -31,13 +32,11 @@ export function DesktopTopbar(props: DesktopTopbarProps) {
   let removeResizeListener: (() => void) | undefined;
 
   const documentMeta = () => {
-    if (props.viewMode === "welcome") {
-      return "Choose a blank document, a workflow preset, or a recent file.";
+    const title = props.documentTitle?.trim();
+    if (!title || isUntitledTitle(title)) {
+      return "New Document";
     }
-    if (props.documentPath) {
-      return props.documentPath;
-    }
-    return `${props.documentMode ?? "draft"} draft in memory`;
+    return title;
   };
 
   const syncWindowState = async () => {
@@ -104,7 +103,7 @@ export function DesktopTopbar(props: DesktopTopbarProps) {
       }}
     >
       <div class="desktop-topbar__drag-region" data-tauri-drag-region>
-        <span class="desktop-topbar__title">{props.documentTitle ?? "Monoscape Desktop"}</span>
+        <span class="desktop-topbar__title">Monoscape Desktop</span>
         <span class="desktop-topbar__meta">{documentMeta()}</span>
       </div>
 

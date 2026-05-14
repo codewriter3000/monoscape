@@ -4,8 +4,24 @@ import { type RightPanelTab } from "./rightPanelHelpers";
 import { RightPanelInsertTab } from "./RightPanelInsertTab";
 import { RightPanelStyleTab } from "./RightPanelStyleTab";
 import { RightPanelLayoutTab } from "./RightPanelLayoutTab";
+import { RightPanelListSection } from "./RightPanelListSection";
+import type { ListState, BulletStyle, NumberStyle } from "./editor/hooks/useListFormatting";
 
-export function RightPanel() {
+export interface RightPanelProps {
+  /** Called when the user confirms an icon insertion from the Insert tab. */
+  onInsertSvg?: (svg: string, name: string) => void;
+  /** Current list state from the editor (drives the List tab UI). */
+  listState?: ListState;
+  onToggleUnorderedList?: () => void;
+  onToggleOrderedList?: () => void;
+  onSetListBulletStyle?: (style: BulletStyle) => void;
+  onSetListNumberStyle?: (style: NumberStyle) => void;
+  onSetListStartNumber?: (n: number) => void;
+  onSetCustomIconBullet?: (svg: string) => void;
+  onRemoveCustomIconBullet?: () => void;
+}
+
+export function RightPanel(props: RightPanelProps) {
   const [tab, setTab] = createSignal<RightPanelTab>("insert");
 
   function tabButtonStyle(t: RightPanelTab): string {
@@ -28,6 +44,9 @@ export function RightPanel() {
         <button type="button" style={tabButtonStyle("style")} onClick={() => setTab("style")}>
           Style
         </button>
+        <button type="button" style={tabButtonStyle("list")} onClick={() => setTab("list")}>
+          List
+        </button>
         <button type="button" style={tabButtonStyle("layout")} onClick={() => setTab("layout")}>
           Layout
         </button>
@@ -36,10 +55,22 @@ export function RightPanel() {
       {/* Scrollable content */}
       <div style="overflow-y: auto; padding: 20px 20px 24px;">
         <Show when={tab() === "insert"}>
-          <RightPanelInsertTab />
+          <RightPanelInsertTab onInsertSvg={props.onInsertSvg} />
         </Show>
         <Show when={tab() === "style"}>
           <RightPanelStyleTab />
+        </Show>
+        <Show when={tab() === "list"}>
+          <RightPanelListSection
+            listState={props.listState}
+            onToggleUnordered={props.onToggleUnorderedList}
+            onToggleOrdered={props.onToggleOrderedList}
+            onSetBulletStyle={props.onSetListBulletStyle}
+            onSetNumberStyle={props.onSetListNumberStyle}
+            onSetStartNumber={props.onSetListStartNumber}
+            onSetCustomIconBullet={props.onSetCustomIconBullet}
+            onRemoveCustomIconBullet={props.onRemoveCustomIconBullet}
+          />
         </Show>
         <Show when={tab() === "layout"}>
           <RightPanelLayoutTab />

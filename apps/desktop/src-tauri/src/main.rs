@@ -16,8 +16,18 @@ use tauri::{
 
 const GOOGLE_FONTS_API_URL: &str = "https://www.googleapis.com/webfonts/v1/webfonts";
 const GOOGLE_FONTS_ENV_KEY: &str = "GOOGLE_WEBFONTSDEVAPI";
-const MONOSCAPE_DOCUMENT_EXTENSION: &str = "monoscape";
 const MONOSCAPE_DOCUMENT_FORMAT: &str = "monoscape-document/v1";
+const DEFAULT_DOCUMENT_SAVE_EXTENSION: &str = "docx";
+const LEGACY_MONOSCAPE_DOCUMENT_EXTENSION: &str = "monoscape";
+// These aliases currently wrap the same Monoscape JSON payload until format-specific exporters exist.
+const SUPPORTED_DOCUMENT_EXTENSIONS: [&str; 6] = [
+  "doc",
+  "docx",
+  "odt",
+  "rtf",
+  "txt",
+  LEGACY_MONOSCAPE_DOCUMENT_EXTENSION,
+];
 const RECENT_DOCUMENT_LIMIT: usize = 20;
 
 #[derive(Clone, Deserialize)]
@@ -354,13 +364,72 @@ fn ensure_path_extension(path: PathBuf, extension: &str) -> PathBuf {
   }
 }
 
+fn path_has_supported_document_extension(path: &Path) -> bool {
+  path
+    .extension()
+    .and_then(|value| value.to_str())
+    .map(|value| {
+      SUPPORTED_DOCUMENT_EXTENSIONS
+        .iter()
+        .any(|extension| value.eq_ignore_ascii_case(extension))
+    })
+    .unwrap_or(false)
+}
+
+fn ensure_document_path_extension(path: PathBuf) -> PathBuf {
+  if path_has_supported_document_extension(&path) {
+    path
+  } else {
+    path.with_extension(DEFAULT_DOCUMENT_SAVE_EXTENSION)
+  }
+}
+
+fn unsupported_document_contents_message() -> String {
+  "Monoscape can only reopen files it saved itself. DOC, DOCX, ODT, TXT, RTF, and .monoscape files currently store the same Monoscape document wrapper payload.".to_string()
+}
+
 fn suggested_document_filename(title: &str) -> String {
   let title = normalize_document_title(title);
-  if title.to_ascii_lowercase().ends_with(".monoscape") {
+  if path_has_supported_document_extension(Path::new(&title)) {
     title
   } else {
-    format!("{title}.monoscape")
+    format!("{title}.{DEFAULT_DOCUMENT_SAVE_EXTENSION}")
   }
+}
+
+fn add_document_dialog_filters(builder: FileDialogBuilder) -> FileDialogBuilder {
+  builder.add_filter("Monoscape documents", &SUPPORTED_DOCUMENT_EXTENSIONS)
+}
+
+fn configure_document_save_dialog(
+  title: &str,
+  suggested_path: Option<&str>,
+  suggested_name: &str,
+) -> FileDialogBuilder {
+  let mut builder = add_document_dialog_filters(FileDialogBuilder::new().set_title(title));
+  builder = builder
+    .add_filter("Word document", &["docx"])
+    .add_filter("Word 97-2003 document", &["doc"])
+    .add_filter("OpenDocument text", &["odt"])
+    .add_filter("Rich Text Format", &["rtf"])
+    .add_filter("Plain text", &["txt"])
+    .add_filter("Legacy Monoscape document", &[LEGACY_MONOSCAPE_DOCUMENT_EXTENSION]);
+
+  if let Some(path) = suggested_path
+    .map(str::trim)
+    .filter(|value| !value.is_empty())
+    .map(PathBuf::from)
+  {
+    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+      builder = builder.set_directory(parent.to_path_buf());
+    }
+
+    if let Some(file_name) = path.file_name().and_then(|value| value.to_str()) {
+      return builder.set_file_name(file_name);
+    }
+  }
+
+  builder.set_file_name(suggested_name)
 }
 
 fn suggested_pdf_filename(name: Option<&str>) -> String {
@@ -420,10 +489,10 @@ fn file_metadata_snapshot(path: &Path) -> Result<FileMetadataSnapshot, String> {
 fn read_document_payload(path: &Path) -> Result<MonoscapeDocumentFile, String> {
   let contents = fs::read_to_string(path).map_err(|_| "Unable to read document file.".to_string())?;
   let document = serde_json::from_str::<MonoscapeDocumentFile>(&contents)
-    .map_err(|_| "Unable to parse document file.".to_string())?;
+    .map_err(|_| unsupported_document_contents_message())?;
 
   if document.format != MONOSCAPE_DOCUMENT_FORMAT {
-    return Err("Unsupported Monoscape document format.".to_string());
+    return Err(unsupported_document_contents_message());
   }
 
   Ok(document)
@@ -718,9 +787,7 @@ async fn import_font_file(
 
 #[tauri::command]
 fn open_document_dialog(app: AppHandle) -> Result<Option<DesktopDocumentFileRecord>, String> {
-  let selected = FileDialogBuilder::new()
-    .set_title("Open Monoscape document")
-    .add_filter("Monoscape document", &[MONOSCAPE_DOCUMENT_EXTENSION])
+  let selected = add_document_dialog_filters(FileDialogBuilder::new().set_title("Open document"))
     .pick_file();
 
   let Some(path) = selected else {
@@ -758,10 +825,8 @@ fn save_document_as_dialog(
     .suggested_name
     .clone()
     .unwrap_or_else(|| suggested_document_filename(&request.document.title));
-  let selected = configure_save_dialog(
-    "Save Monoscape document",
-    "Monoscape document",
-    MONOSCAPE_DOCUMENT_EXTENSION,
+  let selected = configure_document_save_dialog(
+    "Save document",
     request.suggested_path.as_deref(),
     &fallback_name,
   )
@@ -771,7 +836,7 @@ fn save_document_as_dialog(
     return Ok(None);
   };
 
-  let path = ensure_path_extension(path, MONOSCAPE_DOCUMENT_EXTENSION);
+  let path = ensure_document_path_extension(path);
   write_document_to_path(&path, request.document, &app).map(Some)
 }
 
@@ -784,10 +849,8 @@ fn save_document_copy_dialog(
     .suggested_name
     .clone()
     .unwrap_or_else(|| suggested_document_filename(&request.document.title));
-  let selected = configure_save_dialog(
+  let selected = configure_document_save_dialog(
     "Save document copy",
-    "Monoscape document",
-    MONOSCAPE_DOCUMENT_EXTENSION,
     request.suggested_path.as_deref(),
     &fallback_name,
   )
@@ -797,8 +860,45 @@ fn save_document_copy_dialog(
     return Ok(None);
   };
 
-  let path = ensure_path_extension(path, MONOSCAPE_DOCUMENT_EXTENSION);
+  let path = ensure_document_path_extension(path);
   write_document_to_path(&path, request.document, &app).map(Some)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{
+    ensure_document_path_extension, suggested_document_filename, unsupported_document_contents_message,
+  };
+  use std::path::PathBuf;
+
+  #[test]
+  fn defaults_unsuffixed_document_paths_to_docx() {
+    assert_eq!(
+      ensure_document_path_extension(PathBuf::from("C:/drafts/semester-plan")),
+      PathBuf::from("C:/drafts/semester-plan.docx")
+    );
+  }
+
+  #[test]
+  fn preserves_supported_alias_extensions() {
+    assert_eq!(
+      ensure_document_path_extension(PathBuf::from("C:/drafts/semester-plan.rtf")),
+      PathBuf::from("C:/drafts/semester-plan.rtf")
+    );
+  }
+
+  #[test]
+  fn suggested_document_names_default_to_docx() {
+    assert_eq!(suggested_document_filename("Seminar Notes"), "Seminar Notes.docx");
+  }
+
+  #[test]
+  fn unsupported_document_message_explains_alias_limit() {
+    let message = unsupported_document_contents_message();
+    assert!(message.contains("Monoscape can only reopen files it saved itself"));
+    assert!(message.contains("DOCX"));
+    assert!(message.contains("RTF"));
+  }
 }
 
 #[tauri::command]

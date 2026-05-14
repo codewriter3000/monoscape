@@ -5,8 +5,8 @@ import { formatLineSpacingValue, labelLineSpacingOption } from "./constants";
 
 interface FormattingToolbarStateProps {
   editorRef: () => HTMLDivElement | undefined;
-  selectedFontSize: number | null;
-  selectedLineSpacing: number | null;
+  selectedFontSize: () => number | null;
+  selectedLineSpacing: () => number | null;
   onFontSizeChange: (fontSize: number) => void;
   onLineSpacingChange: (lineSpacing: number) => void;
 }
@@ -14,11 +14,11 @@ interface FormattingToolbarStateProps {
 export function useFormattingToolbarState(props: FormattingToolbarStateProps) {
   const [formattingState, setFormattingState] = createSignal<FormattingState>(emptyFormattingState());
   const [fontSizeDraft, setFontSizeDraft] = createSignal(
-    String(props.selectedFontSize ?? DEFAULT_TYPOGRAPHY.fontSize)
+    props.selectedFontSize() === null ? "" : String(props.selectedFontSize())
   );
   const [fontSizeError, setFontSizeError] = createSignal("");
   const [lineSpacingDraft, setLineSpacingDraft] = createSignal(
-    formatLineSpacingValue(props.selectedLineSpacing ?? DEFAULT_LINE_SPACING)
+    props.selectedLineSpacing() === null ? "" : formatLineSpacingValue(props.selectedLineSpacing()!)
   );
   const [lineSpacingError, setLineSpacingError] = createSignal("");
   const [isFontPickerOpen, setIsFontPickerOpen] = createSignal(false);
@@ -67,14 +67,14 @@ export function useFormattingToolbarState(props: FormattingToolbarStateProps) {
 
   const visibleFontSizes = () => {
     const sizes = new Set(FONT_SIZE_OPTIONS);
-    if (props.selectedFontSize !== null) sizes.add(props.selectedFontSize);
+    if (props.selectedFontSize() !== null) sizes.add(props.selectedFontSize()!);
     return [...sizes].sort((left, right) => left - right);
   };
 
   const visibleLineSpacingOptions = () => {
     const spacing = new Set(LINE_SPACING_OPTIONS);
-    if (props.selectedLineSpacing !== null) {
-      spacing.add(Number(formatLineSpacingValue(props.selectedLineSpacing)));
+    if (props.selectedLineSpacing() !== null) {
+      spacing.add(Number(formatLineSpacingValue(props.selectedLineSpacing()!)));
     }
     return [...spacing].sort((left, right) => left - right);
   };
@@ -82,7 +82,7 @@ export function useFormattingToolbarState(props: FormattingToolbarStateProps) {
   const handleFontSizeCommit = (value: string, options?: { focusEditor?: boolean }) => {
     const trimmed = value.trim();
     if (!trimmed) {
-      setFontSizeDraft(String(props.selectedFontSize ?? DEFAULT_TYPOGRAPHY.fontSize));
+      setFontSizeDraft(String(props.selectedFontSize() ?? DEFAULT_TYPOGRAPHY.fontSize));
       setFontSizeError("");
       return;
     }
@@ -109,7 +109,7 @@ export function useFormattingToolbarState(props: FormattingToolbarStateProps) {
   const handleLineSpacingCommit = (value: string, options?: { focusEditor?: boolean }) => {
     const trimmed = value.trim();
     if (!trimmed) {
-      setLineSpacingDraft(formatLineSpacingValue(props.selectedLineSpacing ?? DEFAULT_LINE_SPACING));
+      setLineSpacingDraft(formatLineSpacingValue(props.selectedLineSpacing() ?? DEFAULT_LINE_SPACING));
       setLineSpacingError("");
       return;
     }
@@ -133,18 +133,21 @@ export function useFormattingToolbarState(props: FormattingToolbarStateProps) {
     if (options?.focusEditor ?? true) queueMicrotask(() => focusEditor());
   };
 
-  // Only sync draft from external when the external value is concrete.
-  // When null (mixed selection), preserve the last committed or typed value so
-  // a freshly-committed input isn't reset before the selection has re-synced.
   createEffect(() => {
+    const selectedFontSize = props.selectedFontSize();
     if (!isFontSizeMenuOpen()) {
-      setFontSizeDraft(String(props.selectedFontSize ?? DEFAULT_TYPOGRAPHY.fontSize));
+      setFontSizeDraft(selectedFontSize === null ? "" : String(selectedFontSize));
+      setFontSizeError("");
     }
   });
 
   createEffect(() => {
+    const selectedLineSpacing = props.selectedLineSpacing();
     if (!isLineSpacingMenuOpen()) {
-      setLineSpacingDraft(formatLineSpacingValue(props.selectedLineSpacing ?? DEFAULT_LINE_SPACING));
+      setLineSpacingDraft(
+        selectedLineSpacing === null ? "" : formatLineSpacingValue(selectedLineSpacing)
+      );
+      setLineSpacingError("");
     }
   });
 

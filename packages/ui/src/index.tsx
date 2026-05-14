@@ -3,7 +3,9 @@ import type { PlatformTarget } from "@monoscape/kernel";
 
 export { FormattingToolbar } from "./FormattingToolbar";
 export { TextEditor } from "./TextEditor";
-export { RightPanel } from "./RightPanel";
+export { RightPanel, type RightPanelProps } from "./RightPanel";
+export { SegmentedControl, type SegmentedOption } from "./SegmentedControl";
+export type { ListState, BulletStyle, NumberStyle, ListType } from "./editor/hooks/useListFormatting";
 
 export interface MonoscapeShellProps {
   platform: PlatformTarget;
@@ -101,6 +103,12 @@ export function MonoscapeShell(props: MonoscapeShellProps) {
           border-radius: 16px;
           background: #ffffff;
           box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+          /* Sticky sidebar: stays in view while the document scrolls */
+          position: sticky;
+          top: 0;
+          align-self: start;
+          max-height: 100vh;
+          overflow-y: auto;
         }
 
         .monoscape-shell__footer {

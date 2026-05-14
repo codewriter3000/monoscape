@@ -3,6 +3,16 @@ import { invoke } from "@tauri-apps/api/tauri";
 
 const hasTauri = typeof window !== "undefined" && "__TAURI_IPC__" in window;
 
+const DEFAULT_DESKTOP_DOCUMENT_EXTENSION = "docx";
+const SUPPORTED_DESKTOP_DOCUMENT_EXTENSIONS = [
+  "doc",
+  "docx",
+  "odt",
+  "rtf",
+  "txt",
+  "monoscape"
+] as const;
+
 const DESKTOP_DOCUMENT_COMMANDS = {
   openDocumentDialog: "open_document_dialog",
   readDocumentFromPath: "read_document_from_path",
@@ -57,6 +67,30 @@ export interface PdfExportResult {
   lastModified: number;
 }
 
+function normalizeSuggestedDocumentName(suggestedName?: string) {
+  const trimmed = suggestedName?.trim();
+  if (!trimmed) {
+    return suggestedName;
+  }
+
+  const extensionIndex = trimmed.lastIndexOf(".");
+  if (extensionIndex <= 0) {
+    return `${trimmed}.${DEFAULT_DESKTOP_DOCUMENT_EXTENSION}`;
+  }
+
+  const fileName = trimmed.slice(0, extensionIndex);
+  const extension = trimmed.slice(extensionIndex + 1).toLowerCase();
+  if (SUPPORTED_DESKTOP_DOCUMENT_EXTENSIONS.includes(extension as (typeof SUPPORTED_DESKTOP_DOCUMENT_EXTENSIONS)[number])) {
+    if (extension === "monoscape") {
+      return `${fileName}.${DEFAULT_DESKTOP_DOCUMENT_EXTENSION}`;
+    }
+
+    return trimmed;
+  }
+
+  return `${fileName}.${DEFAULT_DESKTOP_DOCUMENT_EXTENSION}`;
+}
+
 function assertDesktopFileIOAvailable() {
   if (!hasTauri) {
     throw new Error("Desktop document file I/O is only available inside the Tauri shell.");
@@ -108,13 +142,15 @@ export function saveDocumentAs(
   document: DesktopDocumentDraft,
   options: DocumentSaveDialogOptions = {}
 ) {
+  const suggestedName = normalizeSuggestedDocumentName(options.suggestedName);
+
   return invokeDesktopCommand<DesktopDocumentFile | null>(
     DESKTOP_DOCUMENT_COMMANDS.saveDocumentAsDialog,
     {
       request: {
         document,
         suggestedPath: options.suggestedPath,
-        suggestedName: options.suggestedName
+        suggestedName
       }
     }
   );
@@ -124,13 +160,15 @@ export function saveDocumentCopy(
   document: DesktopDocumentDraft,
   options: DocumentSaveDialogOptions = {}
 ) {
+  const suggestedName = normalizeSuggestedDocumentName(options.suggestedName);
+
   return invokeDesktopCommand<DesktopDocumentFile | null>(
     DESKTOP_DOCUMENT_COMMANDS.saveDocumentCopyDialog,
     {
       request: {
         document,
         suggestedPath: options.suggestedPath,
-        suggestedName: options.suggestedName
+        suggestedName
       }
     }
   );

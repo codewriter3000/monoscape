@@ -56,6 +56,10 @@ export function useEditorToolbarState(params: EditorToolbarStateParams): Toolbar
         const wasCollapsed = colorState.prevSelectionCollapsed;
         colorState.prevSelectionCollapsed = range.collapsed;
 
+        if (!range.collapsed) {
+          colorState.pendingColor = undefined;
+        }
+
         if (colorState.pendingColor !== undefined && range.collapsed && wasCollapsed && !colorState.isApplyingColor) {
           const anchorParent = sel.anchorNode?.parentElement;
           if (anchorParent?.dataset?.monoscapeTyping !== "true") {
@@ -86,7 +90,9 @@ export function useEditorToolbarState(params: EditorToolbarStateParams): Toolbar
     onFormatToggle: (mark) => {
       const range = selection.restoreRange();
       if (range) {
-        document.execCommand(mark);
+        // FormattingState key "strikethrough" maps to execCommand "strikeThrough"
+        const execCommandName = mark === "strikethrough" ? "strikeThrough" : mark;
+        document.execCommand(execCommandName);
         finalizeContentMutation();
       }
     },
