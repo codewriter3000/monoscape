@@ -40,6 +40,11 @@ export function useBlockFormatting(
       return 1.5;
     }
 
+    const normalizedLineHeight = styles.lineHeight.trim();
+    if (/^[0-9]*\.?[0-9]+$/.test(normalizedLineHeight)) {
+      return Number(formatLineSpacingValue(Number.parseFloat(normalizedLineHeight)));
+    }
+
     const lineHeightPx = Number.parseFloat(styles.lineHeight);
     const fontSizePx = Number.parseFloat(styles.fontSize);
     if (!Number.isFinite(lineHeightPx) || !Number.isFinite(fontSizePx) || fontSizePx <= 0) {
@@ -161,21 +166,21 @@ export function useBlockFormatting(
     }
 
     const blocks = collectAffectedBlocks(range, editor);
-    
+
     blocks.forEach((block) => {
       block.style.fontFamily = styleDefinition.typography.fontFamily;
       block.style.fontSize = `${styleDefinition.typography.fontSize}pt`;
       block.style.textAlign = styleDefinition.alignment;
       block.style.lineHeight = formatLineSpacingValue(styleDefinition.lineSpacing);
-      
+
       if (styleDefinition.marginBefore !== undefined) {
         block.style.marginTop = `${styleDefinition.marginBefore}pt`;
       }
-      
+
       if (styleDefinition.marginAfter !== undefined) {
         block.style.marginBottom = `${styleDefinition.marginAfter}pt`;
       }
-      
+
       if (styleDefinition.indent !== undefined && styleDefinition.indent > 0) {
         block.style.paddingLeft = `${styleDefinition.indent}pt`;
       }

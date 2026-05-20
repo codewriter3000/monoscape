@@ -1,5 +1,5 @@
 import { onCleanup, onMount } from "solid-js";
-import { TOOLBAR_STYLES } from "./styles";
+import "./toolbar.css";
 import { formatLineSpacingValue, labelLineSpacingOption } from "./constants";
 import { ComboField } from "./components/ComboField";
 import { FontPickerDropdown } from "./components/FontPickerDropdown";
@@ -9,7 +9,6 @@ import { InlineFormatButtons } from "./components/InlineFormatButtons";
 import { AlignmentButtons } from "./components/AlignmentButtons";
 import { IndentOutdentButtons } from "./components/IndentOutdentButtons";
 import {
-  MIXED_FORMATTING_LABEL,
   type FontCatalogEntry,
   type TextAlignment,
   type NormalizedColor,
@@ -18,6 +17,7 @@ import {
 } from "@monoscape/document-core";
 import { useFormattingToolbarState } from "./useFormattingToolbarState";
 import { useToolbarInteractions } from "./useToolbarInteractions";
+import { ImageInsertButton } from "./components/ImageInsertButton";
 
 interface FormattingToolbarProps {
   editorRef: () => HTMLDivElement | undefined;
@@ -45,13 +45,15 @@ interface FormattingToolbarProps {
   onAddCatalogFont?: (font: FontCatalogEntry) => void;
   onRemoveFont?: (fontId: string) => void;
   onUploadFonts?: (fileList: FileList | null) => Promise<void>;
+  onInsertImageFromFile?: () => void;
+  onInsertImageFromUrl?: (url: string) => void;
 }
 
 export function FormattingToolbar(props: FormattingToolbarProps) {
   const toolbarState = useFormattingToolbarState({
     editorRef: props.editorRef,
-    selectedFontSize: props.selectedFontSize,
-    selectedLineSpacing: props.selectedLineSpacing,
+    selectedFontSize: () => props.selectedFontSize,
+    selectedLineSpacing: () => props.selectedLineSpacing,
     onFontSizeChange: props.onFontSizeChange,
     onLineSpacingChange: props.onLineSpacingChange
   });
@@ -83,10 +85,9 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
   const fontSizeListId = "monoscape-font-size-list";
   const lineSpacingListId = "monoscape-line-spacing-list";
 
-  const fontSizePlaceholder =
-    props.selectedFontSize === null ? MIXED_FORMATTING_LABEL : "Size";
-  const lineSpacingPlaceholder =
-    props.selectedLineSpacing === null ? MIXED_FORMATTING_LABEL : "Spacing";
+  const fontSizePlaceholder = () => (props.selectedFontSize === null ? "Mixed" : "Size");
+  const lineSpacingPlaceholder = () =>
+    props.selectedLineSpacing === null ? "Mixed" : "Spacing";
 
   onMount(() => {
     props.registerPrimaryFocusTarget?.(() => fontTriggerRef?.focus());
@@ -122,8 +123,9 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
   });
 
   return (
-    <div role="toolbar" aria-label="Text formatting" style={TOOLBAR_STYLES.container}>
-      <FontPickerDropdown
+    <div role="toolbar" aria-label="Text formatting" class="toolbar__container">
+      <div class="toolbar__row">
+        <FontPickerDropdown
         fonts={props.fonts}
         selectedFontFamily={props.selectedFontFamily}
         isOpen={toolbarState.isFontPickerOpen()}
@@ -145,7 +147,8 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         options={toolbarState.visibleFontSizes()}
         getOptionValue={(opt) => String(opt)}
         getOptionLabel={(opt) => `${opt}pt`}
-        placeholder={fontSizePlaceholder}
+        label="Font size"
+        placeholder={fontSizePlaceholder()}
         ariaLabel="Font size"
         listId={fontSizeListId}
         error={toolbarState.fontSizeError()}
@@ -164,7 +167,8 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         options={toolbarState.visibleLineSpacingOptions()}
         getOptionValue={(opt) => formatLineSpacingValue(opt)}
         getOptionLabel={(opt) => labelLineSpacingOption(opt)}
-        placeholder={lineSpacingPlaceholder}
+        label="Line spacing"
+        placeholder={lineSpacingPlaceholder()}
         ariaLabel="Line spacing"
         listId={lineSpacingListId}
         error={toolbarState.lineSpacingError()}
@@ -178,7 +182,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         renderKeytip={() => renderKeytip("lineSpacing")}
       />
 
-      <div style={TOOLBAR_STYLES.divider} aria-hidden="true" />
+      <div class="toolbar__divider" aria-hidden="true" />
 
       <ColorPickerDropdown
         value={props.selectedColor ?? null}
@@ -200,10 +204,10 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         containerRef={(el) => (styleSetRef = el)}
         renderKeytip={() => renderKeytip("styles")}
       />
+      </div>
 
-      <div style={TOOLBAR_STYLES.divider} aria-hidden="true" />
-
-      <InlineFormatButtons
+      <div class="toolbar__row--centered">
+        <InlineFormatButtons
         state={toolbarState.formattingState()}
         isKeytipMode={isKeytipMode()}
         onFormat={toolbarState.execInlineFormat}
@@ -212,7 +216,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         renderKeytip={renderKeytip}
       />
 
-      <div style={TOOLBAR_STYLES.divider} aria-hidden="true" />
+      <div class="toolbar__divider" aria-hidden="true" />
 
       <AlignmentButtons
         selectedAlignment={props.selectedAlignment}
@@ -223,7 +227,7 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         renderKeytip={renderKeytip}
       />
 
-      <div style={TOOLBAR_STYLES.divider} aria-hidden="true" />
+      <div class="toolbar__divider" aria-hidden="true" />
 
       <IndentOutdentButtons
         buttonRefs={buttonRefs}
@@ -232,6 +236,15 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         onIndent={props.onIndent}
         onOutdent={props.onOutdent}
       />
+
+      <div class="toolbar__divider" aria-hidden="true" />
+
+      <ImageInsertButton
+        onInsertFromFile={() => props.onInsertImageFromFile?.()}
+        onInsertFromUrl={(url) => props.onInsertImageFromUrl?.(url)}
+      />
+
+      </div>
     </div>
   );
 }

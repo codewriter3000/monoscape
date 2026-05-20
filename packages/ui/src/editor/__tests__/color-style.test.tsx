@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  dispatchSelectionChange,
   dispatchDocumentKey,
   flushMicrotasks,
   renderEditor,
@@ -35,10 +36,10 @@ describe("Color and style controls", () => {
     await flushMicrotasks();
 
     const wheelButton = host.querySelector<HTMLButtonElement>(
-      'button[data-picker-mode="wheel"]'
+      'button[title="Wheel"]'
     );
     const pyramidButton = host.querySelector<HTMLButtonElement>(
-      'button[data-picker-mode="pyramid"]'
+      'button[title="Pyramid"]'
     );
 
     pyramidButton?.click();
@@ -171,6 +172,103 @@ describe("Color and style controls", () => {
     editor.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     await flushMicrotasks();
     expect(host.querySelector("[data-color-picker-panel]")).toBeNull();
+
+    dispose();
+  });
+
+  it("keeps typed colored text selectable after a collapsed selection change", async () => {
+    const { editor, colorButton, dispose } = renderEditor(host);
+    editor.innerHTML = "";
+    editor.focus();
+
+    const initialRange = document.createRange();
+    initialRange.selectNodeContents(editor);
+    initialRange.collapse(true);
+    const selection = document.getSelection();
+    if (!selection) {
+      throw new Error("Selection API is unavailable.");
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(initialRange);
+    dispatchSelectionChange();
+    await flushMicrotasks();
+
+    colorButton().click();
+    await flushMicrotasks();
+
+    const redInput = host.querySelector<HTMLInputElement>('input[aria-label="Red channel (0-255)"]');
+    if (!redInput) {
+      throw new Error("Expected red channel input.");
+    }
+
+    redInput.value = "128";
+    redInput.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await flushMicrotasks();
+
+    editor.textContent = "Hello";
+    editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await flushMicrotasks();
+
+    const textNode = editor.firstChild;
+    if (!(textNode instanceof Text)) {
+      throw new Error("Expected plain text node after typing.");
+    }
+
+    const collapsedRange = document.createRange();
+    collapsedRange.setStart(textNode, 0);
+    collapsedRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(collapsedRange);
+    dispatchSelectionChange();
+    await flushMicrotasks();
+
+    const selectedRange = selectRange(textNode, 0, textNode, textNode.textContent?.length ?? 0);
+    await flushMicrotasks();
+
+    expect(selectedRange.collapsed).toBe(false);
+    expect(document.getSelection()?.toString()).toBe("Hello");
+    expect(editor.querySelector('[data-monoscape-typing="true"]')).toBeNull();
+
+    dispose();
+  });
+
+  it("lets Backspace escape a fresh collapsed color change", async () => {
+    const { editor, colorButton, dispose } = renderEditor(host);
+    editor.innerHTML = "<span>A</span>";
+
+    const textNode = editor.querySelector("span")?.firstChild;
+    if (!(textNode instanceof Text)) {
+      throw new Error("Expected text node for Backspace color test.");
+    }
+
+    selectRange(textNode, 1, textNode, 1);
+    await flushMicrotasks();
+
+    colorButton().click();
+    await flushMicrotasks();
+
+    const redInput = host.querySelector<HTMLInputElement>('input[aria-label="Red channel (0-255)"]');
+    if (!redInput) {
+      throw new Error("Expected red channel input.");
+    }
+
+    redInput.value = "128";
+    redInput.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(editor.querySelector('span[data-monoscape-typing="true"]')).not.toBeNull();
+
+    editor.dispatchEvent(
+      new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Backspace" })
+    );
+    await flushMicrotasks();
+
+    const anchorNode = document.getSelection()?.anchorNode;
+    const anchorParent = anchorNode instanceof Text ? anchorNode.parentElement : null;
+
+    expect(editor.querySelector('span[data-monoscape-typing="true"]')).toBeNull();
+    expect(anchorParent?.dataset.monoscapeTyping).not.toBe("true");
 
     dispose();
   });

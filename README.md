@@ -2,6 +2,10 @@
 
 Monoscape is a SolidJS-based word processor scaffolded as a microkernel workspace with extension discovery and installation in mind. The repository is organized to keep the editor kernel, shared UI, client shells, and extensions decoupled from day one.
 
+## Name and affiliation
+
+Monoscape is an independent open source project. It is not affiliated with, endorsed by, or sponsored by any company, product, or service that uses the same or a similar name.
+
 ## Workspace layout
 
 - `apps/desktop` — desktop shell boundary and bootstrap plan

@@ -1,8 +1,8 @@
-import { createWorkspaceSeed, defaultWorkflowTemplates } from "@monoscape/document-core";
+import { createWorkspaceSeed } from "@monoscape/document-core";
 import { citationsExtension } from "@monoscape/extension-citations";
 import { reviewExtension } from "@monoscape/extension-review";
 import { createBootstrapPlan } from "@monoscape/kernel";
-import { MonoscapeShell, TextEditor } from "@monoscape/ui";
+import { MonoscapeShell, RightPanel, TextEditor } from "@monoscape/ui";
 import { onMount } from "solid-js";
 import { createMobileLogger } from "./logging";
 
@@ -52,16 +52,7 @@ export function MobileApp() {
         title="Monoscape Mobile"
         subtitle="Quick capture on Android with the same shared editor surface students use everywhere else."
         primary={<TextEditor />}
-        secondary={
-          <>
-            <p style="margin:0 0 12px;font-weight:600;color:#172033;">Quick actions</p>
-            <ol style="margin:0;padding-left:18px;color:#52607a;">
-              {defaultWorkflowTemplates.slice(0, 2).map((template) => (
-                <li>{template.label}</li>
-              ))}
-            </ol>
-          </>
-        }
+        secondary={<RightPanel />}
         utilities={
           <p style="margin:0;">
             Quick-capture seed: {quickCaptureDocument.title}. Default install queue:

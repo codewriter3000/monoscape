@@ -12,3 +12,4 @@
 - The product is designed around college-student workflows.
 - Extensions are part of the product strategy and should fit the microkernel architecture.
 - The project is MIT licensed with no premium feature split.
+- **[2026-05-10T17:18:44Z] Desktop file service + welcome shell session:** Deduped `copilot-directive-2026-05-02T11-56-30.md` because Decision #35 already existed in `.squad/decisions.md`, merged two new desktop decisions (#39–#40), recorded eight orchestration runs, and left git state untouched because `.squad` only had an unstaged `identity/now.md` change.

@@ -81,6 +81,33 @@ describe("Keyboard flow", () => {
     dispose();
   });
 
+  it("applies Ctrl+B, Ctrl+I, and Ctrl+U inside the editor without leaking to the browser", async () => {
+    const { editor, dispose } = renderEditor(host);
+
+    editor.innerHTML = "<span>Alpha</span>";
+    const textNode = editor.querySelector("span")?.firstChild;
+    if (!textNode) {
+      throw new Error("Expected a text node for inline shortcut test.");
+    }
+
+    selectRange(textNode, 0, textNode, textNode.textContent?.length ?? 0);
+    await flushMicrotasks();
+
+    const boldEvent = dispatchEditorKey(editor, "b", { ctrlKey: true });
+    const italicEvent = dispatchEditorKey(editor, "i", { ctrlKey: true });
+    const underlineEvent = dispatchEditorKey(editor, "u", { ctrlKey: true });
+    await flushMicrotasks();
+
+    expect(boldEvent.defaultPrevented).toBe(true);
+    expect(italicEvent.defaultPrevented).toBe(true);
+    expect(underlineEvent.defaultPrevented).toBe(true);
+    expect(document.execCommand).toHaveBeenCalledWith("bold");
+    expect(document.execCommand).toHaveBeenCalledWith("italic");
+    expect(document.execCommand).toHaveBeenCalledWith("underline");
+
+    dispose();
+  });
+
   it("treats partial multi-line selections as whole-line indent and outdent operations", async () => {
     const { editor, dispose } = renderEditor(host);
 
@@ -112,9 +139,9 @@ describe("Keyboard flow", () => {
     const { editor, fontSizeInput, styleButtons, dispose } = renderEditor(host);
     const buttons = styleButtons();
     const boldButton = buttons.find((button) => button.dataset.toolbarButtonId === "bold");
-    const outdentButton = buttons.find((button) => button.dataset.toolbarButtonId === "outdent");
+    const lastButton = buttons.find((button) => button.dataset.toolbarButtonId === "ordered-list");
 
-    if (!boldButton || !outdentButton) {
+    if (!boldButton || !lastButton) {
       throw new Error("Expected toolbar buttons for keyboard navigation test.");
     }
 
@@ -139,9 +166,9 @@ describe("Keyboard flow", () => {
     boldButton.dispatchEvent(
       new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "End" })
     );
-    expect(document.activeElement).toBe(outdentButton);
+    expect(document.activeElement).toBe(lastButton);
 
-    outdentButton.dispatchEvent(
+    lastButton.dispatchEvent(
       new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "ArrowRight" })
     );
     await flushMicrotasks();

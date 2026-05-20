@@ -25,7 +25,7 @@ export function applyTypographyStyles(
   span.dataset.monoscapeTypography = "true";
   span.style.fontFamily = getFontFamilyStack(findFont(typography.fontFamily));
   span.style.fontSize = `${typography.fontSize}pt`;
-  
+
   if (color !== undefined) {
     if (color === null) {
       span.style.removeProperty("color");
@@ -99,13 +99,13 @@ export function placeCaretInsideTypingSpan(span: HTMLSpanElement) {
   const range = document.createRange();
   range.setStart(placeholder, placeholder.data.length);
   range.collapse(true);
-  
+
   const selection = document.getSelection();
   if (selection) {
     selection.removeAllRanges();
     selection.addRange(range);
   }
-  
+
   return range;
 }
 
@@ -168,7 +168,15 @@ export function cleanupTypingSpans(editorRef: HTMLDivElement) {
         return;
       }
 
-      node.data = node.data.replaceAll(TYPING_PLACEHOLDER, "");
+      // Remove each ZWS character surgically via deleteData so that the browser
+      // adjusts live selection offsets (per the DOM spec) instead of resetting
+      // them to 0, which would cause the cursor to jump before typed text.
+      let idx = node.data.indexOf(TYPING_PLACEHOLDER);
+      while (idx !== -1) {
+        node.deleteData(idx, 1);
+        idx = node.data.indexOf(TYPING_PLACEHOLDER, idx);
+      }
+
       if (!node.data.length) {
         node.remove();
       }

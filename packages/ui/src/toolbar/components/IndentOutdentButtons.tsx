@@ -1,5 +1,4 @@
 import type { JSX } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
 import type { ToolbarButtonId } from "../constants";
 
 interface IndentOutdentButtonsProps {
@@ -20,7 +19,7 @@ export function IndentOutdentButtons(props: IndentOutdentButtonsProps) {
           aria-label="Increase indent"
           title="Increase indent"
           tabIndex={-1}
-          style={TOOLBAR_STYLES.button}
+          class="toolbar__button"
           onClick={props.onIndent}
           onKeyDown={props.onButtonKeyDown}
         >
@@ -36,7 +35,7 @@ export function IndentOutdentButtons(props: IndentOutdentButtonsProps) {
           aria-label="Decrease indent"
           title="Decrease indent"
           tabIndex={-1}
-          style={TOOLBAR_STYLES.button}
+          class="toolbar__button"
           onClick={props.onOutdent}
           onKeyDown={props.onButtonKeyDown}
         >

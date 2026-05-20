@@ -1,7 +1,6 @@
 // Academic style-set dropdown for APA v7 and MLA
 
 import { For, Show, createEffect, createSignal, type JSX } from "solid-js";
-import { TOOLBAR_STYLES } from "../styles";
 import {
   ACADEMIC_STYLE_SETS,
   type AcademicStyleSetId,
@@ -120,40 +119,8 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
     }
   });
 
-  const triggerStyle = `
-    ${TOOLBAR_STYLES.compactTrigger}
-    width: 100px;
-  `;
-
-  const styleSetButtonStyle = (active: boolean) => `
-    padding: 6px 12px;
-    border: 1px solid ${active ? "#005fcc" : "#c3cad8"};
-    background: ${active ? "#dce8ff" : "#ffffff"};
-    color: ${active ? "#005fcc" : "#172033"};
-    font-size: 0.875rem;
-    font-weight: ${active ? "600" : "400"};
-    cursor: pointer;
-    border-radius: 4px;
-    outline: none;
-    transition: background-color 0.1s;
-  `;
-
-  const blockStyleButtonStyle = `
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 10px 12px;
-    border: none;
-    border-radius: 4px;
-    background: transparent;
-    color: #172033;
-    font-size: 0.875rem;
-    text-align: left;
-    cursor: pointer;
-    outline: none;
-    transition: background-color 0.1s;
-  `;
+  const styleSetButtonClass = (active: boolean) =>
+    "toolbar__styleset-button" + (active ? " toolbar__styleset-button--active" : "");
 
   return (
     <div ref={props.containerRef} style="position: relative; display: inline-flex;">
@@ -166,7 +133,7 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
         aria-controls={panelId}
         aria-expanded={props.isOpen}
         tabIndex={-1}
-        style={triggerStyle}
+        class="toolbar__compact-trigger toolbar__style-trigger"
         onClick={() => props.onOpenChange(!props.isOpen)}
         onKeyDown={handleTriggerKeyDown}
       >
@@ -181,7 +148,8 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
           aria-label="Academic style sets"
           id={panelId}
           data-style-set-panel="true"
-          style={TOOLBAR_STYLES.dropdownPanel + "width: 280px;"}
+          class="toolbar__dropdown-panel"
+          style="width: 280px;"
           onKeyDown={handlePanelKeyDown}
         >
           {/* Style set switcher: APA v7 / MLA */}
@@ -193,7 +161,7 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
                   ref={(el) => {
                     styleSetButtons[index()] = el;
                   }}
-                  style={styleSetButtonStyle(selectedStyleSet() === styleSet.id)}
+                  class={styleSetButtonClass(selectedStyleSet() === styleSet.id)}
                   onClick={() => setSelectedStyleSet(styleSet.id)}
                   onKeyDown={(event) => handleStyleSetKeyDown(event, index())}
                   title={styleSet.description}
@@ -206,7 +174,7 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
 
           {/* Block style list */}
           <div style="padding: 0 4px 4px;">
-            <div style={TOOLBAR_STYLES.label + "padding: 0 8px;"}>
+            <div class="toolbar__label" style="padding: 0 8px;">
               {currentStyleSet()?.description}
             </div>
 
@@ -216,17 +184,11 @@ export function StyleSetDropdown(props: StyleSetDropdownProps) {
                   <button
                     type="button"
                     role="listitem"
-                    style={blockStyleButtonStyle}
+                    class="toolbar__blockstyle-button"
                     ref={(el) => {
                       blockStyleButtons[index()] = el;
                     }}
                     tabIndex={focusedIndex() === index() ? 0 : -1}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "#f0f3f6";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "transparent";
-                    }}
                     onClick={() => applyBlockStyle(blockStyle.id)}
                     onKeyDown={(event) => handleBlockKeyDown(event, index())}
                   >
