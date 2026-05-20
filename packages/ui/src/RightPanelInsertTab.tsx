@@ -14,6 +14,8 @@ import { getRecentIcons, type RecentIcon } from "./recentIconsStore";
 
 export interface RightPanelInsertTabProps {
   onInsertSvg?: (svg: string, name: string) => void;
+  onInsertImageFromFile?: () => void;
+  onInsertImageFromUrl?: (url: string) => void;
 }
 
 export function RightPanelInsertTab(props: RightPanelInsertTabProps) {
@@ -73,7 +75,9 @@ export function RightPanelInsertTab(props: RightPanelInsertTabProps) {
       {/* Image */}
       <SectionWrap>
         <p style={SECTION_TITLE}>Image</p>
-        <button type="button" style={`${outlineActionButton()} margin-bottom: 6px;`}>
+        <button type="button" style={`${outlineActionButton()} margin-bottom: 6px;`}
+          onClick={() => props.onInsertImageFromFile?.()}
+        >
           📁  From file…
         </button>
         <div style="display: flex; gap: 6px; align-items: center;">
@@ -87,7 +91,13 @@ export function RightPanelInsertTab(props: RightPanelInsertTabProps) {
           <button
             type="button"
             style="padding: 5px 10px; border: 1px solid #c3cad8; border-radius: 5px; background: #f7f9fc; color: #172033; font-size: 0.75rem; cursor: pointer; outline: none; white-space: nowrap; font-family: inherit;"
-            onClick={() => { if (imageUrl()) console.log(`Insert image: ${imageUrl()}`); }}
+            onClick={() => {
+              const url = imageUrl().trim();
+              if (url) {
+                props.onInsertImageFromUrl?.(url);
+                setImageUrl("");
+              }
+            }}
           >
             Insert
           </button>

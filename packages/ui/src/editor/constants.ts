@@ -27,6 +27,25 @@ export const EDITOR_STYLES = `
     color: #7b869b;
   }
 
+  /* Enter (insertParagraph) creates <div>/<p> block children; Shift+Enter
+     (insertLineBreak) creates <br> within the current block. Add bottom margin
+     to block-level paragraph containers so Enter-created paragraphs have
+     visible spacing while <br> line-breaks do not. */
+  .monoscape-editor p {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .monoscape-editor > div,
+  .monoscape-editor > p {
+    margin-bottom: 1em;
+  }
+
+  .monoscape-editor > div:last-child,
+  .monoscape-editor > p:last-child {
+    margin-bottom: 0;
+  }
+
   .monoscape-toolbar button:focus-visible,
   .monoscape-toolbar select:focus-visible,
   .monoscape-toolbar input:focus-visible {
@@ -43,6 +62,20 @@ export const EDITOR_STYLES = `
   [data-monoscape-icon-selected] {
     outline: 2px solid #005fcc;
     border-radius: 2px;
+  }
+
+  /* Images inserted by the user */
+  img[data-monoscape-image] {
+    max-width: 100%;
+    vertical-align: bottom;
+    cursor: default;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Suppress browser default object-selection ring; the overlay provides its own */
+  img[data-monoscape-image-selected] {
+    outline: none;
   }
 
   @media (forced-colors: active) {

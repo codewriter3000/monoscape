@@ -1,6 +1,6 @@
 // Main editor component orchestrating selection, typography, blocks, fonts, and keyboard flow
 
-import { createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { DEFAULT_LINE_SPACING, DEFAULT_TYPOGRAPHY, getFontFamilyStack } from "@monoscape/document-core";
 import type { FontCatalogEntry, NormalizedColor } from "@monoscape/document-core";
 import { FormattingToolbar } from "../FormattingToolbar";
@@ -14,8 +14,10 @@ import { useListFormatting } from "./hooks/useListFormatting";
 import type { ListState, BulletStyle, NumberStyle } from "./hooks/useListFormatting";
 import { cleanupTypingSpans } from "./utils/typographySpans";
 import { buildToolbarSnapshot } from "./utils/editorToolbarSnapshot";
+import { closestBlockAncestor } from "./utils/blockTraversal";
 import { EDITOR_KEYBOARD_HELP_ID, EDITOR_STYLES, buildEditorInlineStyle } from "./constants";
 import { getIconSpanAtRange, getIconColor, applyColorToIconSpan, buildInsertableSvgElement } from "../iconUtils";
+import { ImageResizeOverlay } from "./ImageResizeOverlay";
 
 export interface TextEditorProps {
   documentSessionKey?: string;
@@ -44,6 +46,14 @@ export interface TextEditorProps {
     applyStartNumber: (n: number) => void;
     applyCustomIconBullet: (svg: string) => void;
     removeCustomIconBullet: () => void;
+  }) => void;
+  /**
+   * Called once on mount with image-insertion helpers. Store the reference and
+   * pass `insertFromFile` / `insertFromUrl` to the RightPanel's Insert tab.
+   */
+  onRegisterInsertImage?: (actions: {
+    insertFromFile: () => void;
+    insertFromUrl: (url: string) => void;
   }) => void;
 }
 
@@ -150,6 +160,85 @@ export function TextEditor(props: TextEditorProps) {
     finalizeContentMutation();
   };
 
+  // ── Image insertion ─────────────────────────────────────────────────────
+
+  const insertImageAtCaret = (src: string) => {
+    const range = selection.restoreRange();
+    if (!range || !editorRef) return;
+
+    if (!range.collapsed) {
+      range.deleteContents();
+    }
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.dataset.monoscapeImage = "true";
+    img.contentEditable = "false";
+    img.style.maxWidth = "100%";
+
+    range.insertNode(img);
+
+    // Place caret immediately after the inserted image
+    const afterRange = document.createRange();
+    afterRange.setStartAfter(img);
+    afterRange.collapse(true);
+    selection.setSelection(afterRange);
+
+    finalizeContentMutation();
+  };
+
+  const insertImageFromFile = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.addEventListener("load", (e) => {
+        const dataUrl = e.target?.result;
+        if (typeof dataUrl === "string") {
+          insertImageAtCaret(dataUrl);
+        }
+      });
+      reader.readAsDataURL(file);
+    });
+    input.click();
+  };
+
+  const insertImageFromUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (trimmed) insertImageAtCaret(trimmed);
+  };
+
+  // ── Image selection tracking ─────────────────────────────────────────────
+
+  const [selectedImage, setSelectedImage] = createSignal<HTMLImageElement | null>(null);
+
+  // Deselect image when the user clicks outside the editor and outside the overlay
+  onMount(() => {
+    const handleDocMouseDown = (e: MouseEvent) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      const inEditor  = !!editorRef?.contains(target);
+      const inOverlay = !!target.closest("[data-monoscape-image-overlay]");
+      if (!inEditor && !inOverlay) {
+        setSelectedImage(null);
+      }
+    };
+    document.addEventListener("mousedown", handleDocMouseDown);
+    onCleanup(() => document.removeEventListener("mousedown", handleDocMouseDown));
+  });
+
+  // Mirror selection state to a data attribute so CSS can style the selected image
+  createEffect(() => {
+    const next = selectedImage();
+    if (!editorRef) return;
+    const prev = editorRef.querySelector<HTMLImageElement>("[data-monoscape-image-selected]");
+    if (prev && prev !== next) prev.removeAttribute("data-monoscape-image-selected");
+    if (next) next.setAttribute("data-monoscape-image-selected", "true");
+  });
+
   onMount(() => {
     props.onRegisterInsertIcon?.(insertIconAtCaret);
     props.onRegisterListActions?.({
@@ -161,6 +250,10 @@ export function TextEditor(props: TextEditorProps) {
       applyStartNumber: lists.applyStartNumber,
       applyCustomIconBullet: lists.applyCustomIconBullet,
       removeCustomIconBullet: lists.removeCustomIconBullet,
+    });
+    props.onRegisterInsertImage?.({
+      insertFromFile: insertImageFromFile,
+      insertFromUrl: insertImageFromUrl,
     });
   });
 
@@ -234,6 +327,68 @@ export function TextEditor(props: TextEditorProps) {
     colorState,
     finalizeContentMutation
   });
+
+  /**
+   * When the user types `- `, `1. `, `a. `, or `A. ` on an otherwise-empty
+   * paragraph line, convert it to the matching list type.
+   * Returns true if the event was handled (caller should preventDefault).
+   */
+  const tryAutoList = (): boolean => {
+    const range = selection.restoreRange();
+    if (!range || !range.collapsed || !editorRef) return false;
+
+    // Only trigger on block elements that are not already list items.
+    // block === editorRef is valid: it means the first line has no block wrapper yet.
+    const block = closestBlockAncestor(range.startContainer, editorRef);
+    if (block instanceof HTMLLIElement) return false;
+
+    const blockText = (block.textContent ?? "").replace(/\u200B/g, "");
+
+    let makeUl = false;
+    let makeOl = false;
+    let olNumberStyle: NumberStyle | null = null;
+
+    if (blockText === "-") {
+      makeUl = true;
+    } else if (blockText === "1.") {
+      makeOl = true;
+      olNumberStyle = "decimal";
+    } else if (blockText === "a.") {
+      makeOl = true;
+      olNumberStyle = "lower-alpha";
+    } else if (blockText === "A.") {
+      makeOl = true;
+      olNumberStyle = "upper-alpha";
+    } else {
+      return false;
+    }
+
+    // Select and delete the trigger prefix in the block
+    const deleteRange = document.createRange();
+    deleteRange.selectNodeContents(block);
+    selection.setSelection(deleteRange);
+    document.execCommand("delete");
+
+    // Sync saved range to the post-delete browser position (old nodes are detached)
+    const afterDelete = document.getSelection();
+    if (afterDelete?.rangeCount) {
+      selection.syncRange(afterDelete.getRangeAt(0));
+    }
+
+    // Apply list — toggle* methods call selection.restoreRange() internally
+    if (makeUl) {
+      lists.toggleUnorderedList();
+    } else {
+      lists.toggleOrderedList();
+      if (olNumberStyle && olNumberStyle !== "decimal") {
+        lists.applyNumberStyle(olNumberStyle);
+      }
+    }
+
+    syncToolbarState();
+    emitDocumentChange();
+    return true;
+  };
 
   // Maps key letters to execCommand names (same names used by toolbar execInlineFormat)
   const inlineShortcutCommands: Partial<Record<string, string>> = {
@@ -342,6 +497,8 @@ export function TextEditor(props: TextEditorProps) {
           onAddCatalogFont={fontLibrary.addCatalogFont}
           onRemoveFont={fontLibrary.removeFont}
           onUploadFonts={fontLibrary.addUploadedFonts}
+          onInsertImageFromFile={insertImageFromFile}
+          onInsertImageFromUrl={insertImageFromUrl}
         />
       </div>
       <div class="monoscape-editor-frame">
@@ -368,6 +525,14 @@ export function TextEditor(props: TextEditorProps) {
             if (iconSpan) {
               setSelectedIconSpan(iconSpan);
             }
+
+            // Image selection: clicking on an image shows the resize overlay.
+            const img = (e.target as Element).closest<HTMLImageElement>("img[data-monoscape-image]");
+            if (img) {
+              setSelectedImage(img);
+            } else {
+              setSelectedImage(null);
+            }
           }}
           onFocus={() => {
             queueMicrotask(() => {
@@ -393,6 +558,16 @@ export function TextEditor(props: TextEditorProps) {
             emitDocumentChange();
           }}
           onKeyDown={(event) => {
+            // Delete or Backspace removes the currently selected image
+            if ((event.key === "Delete" || event.key === "Backspace") && selectedImage()) {
+              event.preventDefault();
+              const img = selectedImage()!;
+              setSelectedImage(null);
+              img.remove();
+              finalizeContentMutation();
+              return;
+            }
+
             if ((event.ctrlKey || event.metaKey) && !event.altKey) {
               if (event.shiftKey) {
                 const cmd = inlineShiftShortcutCommands[event.key.toLowerCase()];
@@ -447,14 +622,49 @@ export function TextEditor(props: TextEditorProps) {
               return;
             }
 
+            if (event.key === " " && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey) {
+              if (tryAutoList()) {
+                event.preventDefault();
+                return;
+              }
+            }
+
             if (event.key === "Enter") {
               event.preventDefault();
-              document.execCommand("insertLineBreak");
+              if (event.shiftKey) {
+                // Soft line break: no paragraph spacing, no new list item
+                document.execCommand("insertLineBreak");
+              } else {
+                // Paragraph break. When the caret sits directly in the editor
+                // root (raw first line, no block wrapper yet), formatBlock wraps
+                // the content in <p> first so that insertParagraph always
+                // produces two block-level <p> siblings rather than falling back
+                // to a plain <br> (Firefox default) or unstructured text.
+                const activeSel = document.getSelection();
+                if (editorRef && activeSel?.rangeCount) {
+                  const blockNode = closestBlockAncestor(
+                    activeSel.getRangeAt(0).startContainer,
+                    editorRef
+                  );
+                  if (blockNode === editorRef) {
+                    document.execCommand("formatBlock", false, "<p>");
+                  }
+                }
+                document.execCommand("insertParagraph");
+              }
               finalizeContentMutation();
             }
           }}
         />
       </div>
+
+      {/* Image resize/rotate overlay — position:fixed, not clipped by parent overflow */}
+      <Show when={selectedImage()}>
+        <ImageResizeOverlay
+          image={selectedImage()!}
+          onMutated={emitDocumentChange}
+        />
+      </Show>
     </div>
   );
 }

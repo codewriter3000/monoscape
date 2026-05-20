@@ -10,6 +10,9 @@ import type { ListState, BulletStyle, NumberStyle } from "./editor/hooks/useList
 export interface RightPanelProps {
   /** Called when the user confirms an icon insertion from the Insert tab. */
   onInsertSvg?: (svg: string, name: string) => void;
+  /** Image insertion actions forwarded from TextEditor via onRegisterInsertImage. */
+  onInsertImageFromFile?: () => void;
+  onInsertImageFromUrl?: (url: string) => void;
   /** Current list state from the editor (drives the List tab UI). */
   listState?: ListState;
   onToggleUnorderedList?: () => void;
@@ -55,7 +58,11 @@ export function RightPanel(props: RightPanelProps) {
       {/* Scrollable content */}
       <div style="overflow-y: auto; padding: 20px 20px 24px;">
         <Show when={tab() === "insert"}>
-          <RightPanelInsertTab onInsertSvg={props.onInsertSvg} />
+          <RightPanelInsertTab
+            onInsertSvg={props.onInsertSvg}
+            onInsertImageFromFile={props.onInsertImageFromFile}
+            onInsertImageFromUrl={props.onInsertImageFromUrl}
+          />
         </Show>
         <Show when={tab() === "style"}>
           <RightPanelStyleTab />

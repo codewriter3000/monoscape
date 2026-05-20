@@ -17,6 +17,7 @@ import {
 } from "@monoscape/document-core";
 import { useFormattingToolbarState } from "./useFormattingToolbarState";
 import { useToolbarInteractions } from "./useToolbarInteractions";
+import { ImageInsertButton } from "./components/ImageInsertButton";
 
 interface FormattingToolbarProps {
   editorRef: () => HTMLDivElement | undefined;
@@ -44,6 +45,8 @@ interface FormattingToolbarProps {
   onAddCatalogFont?: (font: FontCatalogEntry) => void;
   onRemoveFont?: (fontId: string) => void;
   onUploadFonts?: (fileList: FileList | null) => Promise<void>;
+  onInsertImageFromFile?: () => void;
+  onInsertImageFromUrl?: (url: string) => void;
 }
 
 export function FormattingToolbar(props: FormattingToolbarProps) {
@@ -232,6 +235,13 @@ export function FormattingToolbar(props: FormattingToolbarProps) {
         renderKeytip={renderKeytip}
         onIndent={props.onIndent}
         onOutdent={props.onOutdent}
+      />
+
+      <div class="toolbar__divider" aria-hidden="true" />
+
+      <ImageInsertButton
+        onInsertFromFile={() => props.onInsertImageFromFile?.()}
+        onInsertFromUrl={(url) => props.onInsertImageFromUrl?.(url)}
       />
 
       </div>

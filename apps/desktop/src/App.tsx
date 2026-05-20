@@ -221,6 +221,8 @@ export function DesktopApp() {
               // Bridge: TextEditor registers its insert-icon function here;
               // RightPanel calls it via onInsertSvg.
               let insertIconRef: ((svg: string, name: string) => void) | undefined;
+              // Bridge: image-insertion helpers registered by TextEditor.
+              let insertImageRef: { insertFromFile: () => void; insertFromUrl: (url: string) => void } | undefined;
 
               return (
               <MonoscapeShell
@@ -235,11 +237,14 @@ export function DesktopApp() {
                     fontCapabilities={desktopFontCapabilities}
                     onRegisterInsertIcon={(fn) => { insertIconRef = fn; }}
                     onRegisterListActions={(actions) => setListActions(actions)}
+                    onRegisterInsertImage={(actions) => { insertImageRef = actions; }}
                   />
                 }
                 secondary={
                   <RightPanel
                     onInsertSvg={(svg, name) => insertIconRef?.(svg, name)}
+                    onInsertImageFromFile={() => insertImageRef?.insertFromFile()}
+                    onInsertImageFromUrl={(url) => insertImageRef?.insertFromUrl(url)}
                     listState={listActions()?.listState()}
                     onToggleUnorderedList={() => listActions()?.toggleUnorderedList()}
                     onToggleOrderedList={() => listActions()?.toggleOrderedList()}
