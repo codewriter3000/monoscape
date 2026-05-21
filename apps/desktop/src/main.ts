@@ -1,3 +1,4 @@
+// Design tokens are injected as a CSS side-effect when App.tsx imports themeExtension.
 import { render } from "solid-js/web";
 import { DesktopApp, desktopBootstrapPlan } from "./App";
 
@@ -8,5 +9,9 @@ if (!(root instanceof HTMLElement)) {
 }
 
 render(DesktopApp, root);
+
+requestAnimationFrame(() => {
+  (window as Window & { __hideSplash?: () => void }).__hideSplash?.();
+});
 
 export { DesktopApp, desktopBootstrapPlan };

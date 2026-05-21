@@ -1,7 +1,23 @@
 // Shared test helpers for editor tests
 
 import { render } from "solid-js/web";
-import { TextEditor } from "../TextEditor";
+import { TextEditor, type TextEditorProps } from "../TextEditor";
+
+class ResizeObserverMock implements ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+
+if (!("ResizeObserver" in globalThis)) {
+  Object.defineProperty(globalThis, "ResizeObserver", {
+    configurable: true,
+    value: ResizeObserverMock
+  });
+}
 
 export function flushMicrotasks() {
   return Promise.resolve().then(() => Promise.resolve());
@@ -105,8 +121,8 @@ export interface RenderedEditor {
   styleButtons: () => HTMLButtonElement[];
 }
 
-export function renderEditor(host: HTMLDivElement): RenderedEditor & { dispose: () => void } {
-  const dispose = render(() => <TextEditor />, host);
+export function renderEditor(host: HTMLDivElement, props: TextEditorProps = {}): RenderedEditor & { dispose: () => void } {
+  const dispose = render(() => <TextEditor {...props} />, host);
   const editor = host.querySelector(".monoscape-editor");
   if (!(editor instanceof HTMLDivElement)) {
     throw new Error("Editor did not render.");
@@ -134,14 +150,14 @@ export interface RenderedEditorWithBoundaries extends RenderedEditor {
   after: HTMLButtonElement;
 }
 
-export function renderEditorWithBoundaries(host: HTMLDivElement): RenderedEditorWithBoundaries & { dispose: () => void } {
+export function renderEditorWithBoundaries(host: HTMLDivElement, props: TextEditorProps = {}): RenderedEditorWithBoundaries & { dispose: () => void } {
   const dispose = render(
     () => (
       <>
         <button type="button" data-focus-boundary="before">
           Before
         </button>
-        <TextEditor />
+        <TextEditor {...props} />
         <button type="button" data-focus-boundary="after">
           After
         </button>

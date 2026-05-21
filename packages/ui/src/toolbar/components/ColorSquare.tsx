@@ -1,3 +1,6 @@
+// @arch-override: hex-colors
+// Reason: ColorSquare renders canvas-based HSL gradients. #fff and #000 are
+// literal gradient-stop color values (pure white/black), not UI style tokens.
 import { createMemo } from "solid-js";
 import { normalizeColor } from "@monoscape/document-core";
 import type { NormalizedColor } from "@monoscape/document-core";

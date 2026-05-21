@@ -1,3 +1,6 @@
+// @arch-override: hex-colors
+// Reason: ColorPyramid renders a canvas gradient for value/saturation selection.
+// #fff and #000 are literal gradient-stop color values, not UI style tokens.
 import { createEffect, createMemo } from "solid-js";
 import { normalizeColor } from "@monoscape/document-core";
 import type { NormalizedColor } from "@monoscape/document-core";

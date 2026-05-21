@@ -1,3 +1,8 @@
+// @arch-override: hex-colors
+// Reason: buildPrintDocumentMarkup generates a self-contained HTML document
+// for PDF export. CSS custom properties cannot be resolved outside a live
+// browser context, so hardcoded fallback values are intentional here.
+
 export function isUntitledTitle(title: string) {
   return /^untitled\b/i.test(title);
 }

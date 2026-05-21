@@ -1,4 +1,4 @@
-import { createSignal } from "solid-js";
+import { createMemo, createSignal } from "solid-js";
 import {
   SECTION_TITLE,
   FIELD_LABEL,
@@ -14,16 +14,22 @@ import {
   type LineNumberMode,
   type HyphenationMode
 } from "./rightPanelHelpers";
-import { SegmentedControl } from "./SegmentedControl";
+import { SegmentedControl } from "../common/SegmentedControl";
+import { DEFAULT_DOCUMENT_MARGINS, type DocumentMargins } from "../editor/constants";
 
-export function RightPanelLayoutTab() {
+export interface RightPanelLayoutTabProps {
+  margins?: DocumentMargins;
+  onMarginsChange?: (margins: DocumentMargins) => void;
+  /** Current line-spacing value from the editor selection (drives the input). */
+  lineSpacing?: number | null;
+  onLineSpacingChange?: (v: number) => void;
+  onParagraphIndentChange?: (left: number, right: number, firstLine: number, hanging: number) => void;
+  onParagraphSpacingChange?: (before: number, after: number) => void;
+}
+
+export function RightPanelLayoutTab(props: RightPanelLayoutTabProps) {
   const [orientation, setOrientation] = createSignal<PageOrientation>("portrait");
   const [paperSize, setPaperSize] = createSignal<PaperSize>("letter");
-  const [marginPreset, setMarginPreset] = createSignal<MarginPreset>("normal");
-  const [marginTop, setMarginTop] = createSignal("1.0");
-  const [marginBottom, setMarginBottom] = createSignal("1.0");
-  const [marginLeft, setMarginLeft] = createSignal("1.25");
-  const [marginRight, setMarginRight] = createSignal("1.25");
   const [columns, setColumns] = createSignal<ColumnCount>(1);
   const [lineNumbers, setLineNumbers] = createSignal<LineNumberMode>("none");
   const [hyphenation, setHyphenation] = createSignal<HyphenationMode>("none");
@@ -33,20 +39,54 @@ export function RightPanelLayoutTab() {
   const [indentHanging, setIndentHanging] = createSignal("0");
   const [spacingBefore, setSpacingBefore] = createSignal("0");
   const [spacingAfter, setSpacingAfter] = createSignal("10");
-  const [lineSpacing, setLineSpacing] = createSignal("1.15");
+  // lineSpacingInput is the local UI value; props.lineSpacing drives it when set
+  const [lineSpacingInput, setLineSpacingInput] = createSignal("1.15");
+  const lineSpacingDisplayed = () =>
+    props.lineSpacing != null ? String(props.lineSpacing) : lineSpacingInput();
   const [lineSpacingRule, setLineSpacingRule] = createSignal<"multiple" | "exact" | "atleast">("multiple");
 
+  // Helpers that apply indentation and re-read values from local signals
+  const fireIndent = (l = indentLeft(), r = indentRight(), f = indentFirst(), h = indentHanging()) => {
+    const lv = parseFloat(l), rv = parseFloat(r), fv = parseFloat(f), hv = parseFloat(h);
+    if ([lv, rv, fv, hv].every(Number.isFinite)) {
+      props.onParagraphIndentChange?.(lv, rv, fv, hv);
+    }
+  };
+
+  const fireSpacing = (b = spacingBefore(), a = spacingAfter()) => {
+    const bv = parseFloat(b), av = parseFloat(a);
+    if (Number.isFinite(bv) && Number.isFinite(av)) {
+      props.onParagraphSpacingChange?.(bv, av);
+    }
+  };
+
+  // Derive active margins, falling back to defaults when no props are provided
+  const currentMargins = () => props.margins ?? DEFAULT_DOCUMENT_MARGINS;
+  const marginTop    = () => String(currentMargins().top);
+  const marginBottom = () => String(currentMargins().bottom);
+  const marginLeft   = () => String(currentMargins().left);
+  const marginRight  = () => String(currentMargins().right);
+
+  // Derive the active preset from the current margin values
+  const marginPreset = createMemo<MarginPreset>(() => {
+    const m = currentMargins();
+    if (m.top === 1.0 && m.bottom === 1.0 && m.left === 1.25 && m.right === 1.25) return "normal";
+    if (m.top === 0.5 && m.bottom === 0.5 && m.left === 0.5  && m.right === 0.5)  return "narrow";
+    if (m.top === 1.0 && m.bottom === 1.0 && m.left === 2.0  && m.right === 2.0)  return "wide";
+    return "custom";
+  });
+
   function applyMarginPreset(p: MarginPreset) {
-    setMarginPreset(p);
-    if (p === "normal") {
-      setMarginTop("1.0"); setMarginBottom("1.0");
-      setMarginLeft("1.25"); setMarginRight("1.25");
-    } else if (p === "narrow") {
-      setMarginTop("0.5"); setMarginBottom("0.5");
-      setMarginLeft("0.5"); setMarginRight("0.5");
-    } else if (p === "wide") {
-      setMarginTop("1.0"); setMarginBottom("1.0");
-      setMarginLeft("2.0"); setMarginRight("2.0");
+    if (p === "normal")  props.onMarginsChange?.({ top: 1.0, bottom: 1.0, left: 1.25, right: 1.25 });
+    else if (p === "narrow") props.onMarginsChange?.({ top: 0.5, bottom: 0.5, left: 0.5, right: 0.5 });
+    else if (p === "wide")   props.onMarginsChange?.({ top: 1.0, bottom: 1.0, left: 2.0, right: 2.0 });
+    // "custom" is only reached via individual inputs
+  }
+
+  function setMargin(side: keyof DocumentMargins, raw: string) {
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n >= 0) {
+      props.onMarginsChange?.({ ...currentMargins(), [side]: n });
     }
   }
 
@@ -96,19 +136,21 @@ export function RightPanelLayoutTab() {
           ))}
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-          {[
-            { label: "Top", val: marginTop, set: setMarginTop },
-            { label: "Bottom", val: marginBottom, set: setMarginBottom },
-            { label: "Left", val: marginLeft, set: setMarginLeft },
-            { label: "Right", val: marginRight, set: setMarginRight },
-          ].map(({ label, val, set }) => (
+          {(
+            [
+              { label: "Top",    side: "top"    as keyof DocumentMargins, val: marginTop    },
+              { label: "Bottom", side: "bottom" as keyof DocumentMargins, val: marginBottom },
+              { label: "Left",   side: "left"   as keyof DocumentMargins, val: marginLeft   },
+              { label: "Right",  side: "right"  as keyof DocumentMargins, val: marginRight  },
+            ] as const
+          ).map(({ label, side, val }) => (
             <label style={FIELD_LABEL}>
               {label}
               <input
                 type="number" min="0" max="4" step="0.05"
                 value={val()}
                 style={`${fieldInput()} margin-top: 2px;`}
-                onInput={(e) => { set(e.currentTarget.value); setMarginPreset("custom"); }}
+                onInput={(e) => setMargin(side, e.currentTarget.value)}
               />
             </label>
           ))}
@@ -179,12 +221,12 @@ export function RightPanelLayoutTab() {
       <SectionWrap>
         <p style={SECTION_TITLE}>Indentation (in)</p>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
-          <label style={FIELD_LABEL}>Left<input type="number" min="0" max="4" step="0.05" value={indentLeft()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setIndentLeft(e.currentTarget.value)} /></label>
-          <label style={FIELD_LABEL}>Right<input type="number" min="0" max="4" step="0.05" value={indentRight()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setIndentRight(e.currentTarget.value)} /></label>
+          <label style={FIELD_LABEL}>Left<input type="number" min="0" max="4" step="0.05" value={indentLeft()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setIndentLeft(e.currentTarget.value); fireIndent(e.currentTarget.value); }} /></label>
+          <label style={FIELD_LABEL}>Right<input type="number" min="0" max="4" step="0.05" value={indentRight()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setIndentRight(e.currentTarget.value); fireIndent(undefined, e.currentTarget.value); }} /></label>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
-          <label style={FIELD_LABEL}>First line<input type="number" min="-2" max="4" step="0.05" value={indentFirst()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setIndentFirst(e.currentTarget.value)} /></label>
-          <label style={FIELD_LABEL}>Hanging<input type="number" min="0" max="4" step="0.05" value={indentHanging()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setIndentHanging(e.currentTarget.value)} /></label>
+          <label style={FIELD_LABEL}>First line<input type="number" min="-2" max="4" step="0.05" value={indentFirst()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setIndentFirst(e.currentTarget.value); fireIndent(undefined, undefined, e.currentTarget.value); }} /></label>
+          <label style={FIELD_LABEL}>Hanging<input type="number" min="0" max="4" step="0.05" value={indentHanging()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setIndentHanging(e.currentTarget.value); fireIndent(undefined, undefined, undefined, e.currentTarget.value); }} /></label>
         </div>
       </SectionWrap>
 
@@ -194,8 +236,8 @@ export function RightPanelLayoutTab() {
       <SectionWrap>
         <p style={SECTION_TITLE}>Paragraph Spacing</p>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
-          <label style={FIELD_LABEL}>Before (pt)<input type="number" min="0" max="144" step="1" value={spacingBefore()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setSpacingBefore(e.currentTarget.value)} /></label>
-          <label style={FIELD_LABEL}>After (pt)<input type="number" min="0" max="144" step="1" value={spacingAfter()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => setSpacingAfter(e.currentTarget.value)} /></label>
+          <label style={FIELD_LABEL}>Before (pt)<input type="number" min="0" max="144" step="1" value={spacingBefore()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setSpacingBefore(e.currentTarget.value); fireSpacing(e.currentTarget.value); }} /></label>
+          <label style={FIELD_LABEL}>After (pt)<input type="number" min="0" max="144" step="1" value={spacingAfter()} style={`${fieldInput()} margin-top: 2px;`} onInput={(e) => { setSpacingAfter(e.currentTarget.value); fireSpacing(undefined, e.currentTarget.value); }} /></label>
         </div>
         <div>
           <span style={FIELD_LABEL}>Line spacing rule</span>
@@ -211,9 +253,13 @@ export function RightPanelLayoutTab() {
               min={lineSpacingRule() === "multiple" ? "0.5" : "1"}
               max={lineSpacingRule() === "multiple" ? "5" : "288"}
               step={lineSpacingRule() === "multiple" ? "0.05" : "1"}
-              value={lineSpacing()}
+              value={lineSpacingDisplayed()}
               style={compactNumInput()}
-              onInput={(e) => setLineSpacing(e.currentTarget.value)}
+              onInput={(e) => {
+                setLineSpacingInput(e.currentTarget.value);
+                const n = parseFloat(e.currentTarget.value);
+                if (Number.isFinite(n) && n > 0) props.onLineSpacingChange?.(n);
+              }}
             />
           </div>
         </div>

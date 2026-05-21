@@ -170,7 +170,7 @@ export function ColorPickerDropdown(props: ColorPickerDropdownProps) {
           style={`display:flex;align-items:stretch;border:1px solid ${borderColor()};border-radius:12px;overflow:hidden;box-shadow:${isActive() ? "0 0 0 2px rgba(0,95,204,0.2)" : "none"};transition:border-color 0.15s,box-shadow 0.15s;`}
         >
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 12px;background:#f7f9fc;min-width:0;width:100px;">
-            <span style="font-weight:700;font-size:0.65rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">Color</span>
+            <span style="font-weight:500;font-size:0.75rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">Color</span>
             <input
               ref={(el) => { hexInputRef = el; }}
               type="text"

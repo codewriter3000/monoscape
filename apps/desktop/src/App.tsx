@@ -2,8 +2,9 @@ import { Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { defaultWorkflowTemplates } from "@monoscape/document-core";
 import { citationsExtension } from "@monoscape/extension-citations";
 import { reviewExtension } from "@monoscape/extension-review";
+import { themeExtension } from "@monoscape/extension-theme";
 import { createBootstrapPlan } from "@monoscape/kernel";
-import { MonoscapeShell, RightPanel, TextEditor, type ListState, type BulletStyle, type NumberStyle } from "@monoscape/ui";
+import { MonoscapeShell, RightPanel, TextEditor, type ListState, type BulletStyle, type NumberStyle, DEFAULT_DOCUMENT_MARGINS, type DocumentMargins } from "@monoscape/ui";
 import { DesktopTopbar } from "./DesktopTopbar";
 import { desktopDocumentFileIO, type RecentDesktopDocument } from "./documentFileIO";
 import { desktopFontCapabilities } from "./fontSources";
@@ -27,10 +28,10 @@ export const desktopBootstrapPlan = createBootstrapPlan(
     platform: "desktop",
     accessibilityBaseline: "WCAG 2.2 AA",
     audience: "Students moving between focused drafting, research, and review",
-    extensionSlots: ["document.command-bar", "document.sidebar", "document.review-pane"],
-    defaultExtensionIds: [citationsExtension.manifest.id, reviewExtension.manifest.id]
+    extensionSlots: ["document.command-bar", "document.sidebar", "document.review-pane", "app.theme"],
+    defaultExtensionIds: [themeExtension.manifest.id, citationsExtension.manifest.id, reviewExtension.manifest.id]
   },
-  [citationsExtension.manifest, reviewExtension.manifest]
+  [themeExtension.manifest, citationsExtension.manifest, reviewExtension.manifest]
 );
 
 export function DesktopApp() {
@@ -63,6 +64,31 @@ export function DesktopApp() {
     removeCustomIconBullet: () => void;
   } | undefined>(undefined);
 
+  // Bridge: page margins shared between the TextEditor (rulers + padding) and
+  // the RightPanel Layout tab (controls).
+  const [margins, setMargins] = createSignal<DocumentMargins>(DEFAULT_DOCUMENT_MARGINS);
+
+  // Bridge: block formatting actions (line spacing, indent, paragraph spacing)
+  // registered by TextEditor and consumed by RightPanel.
+  const [formattingActions, setFormattingActions] = createSignal<{
+    lineSpacing: () => number | null;
+    applyLineSpacing: (v: number) => void;
+    applyParagraphIndent: (left: number, right: number, firstLine: number, hanging: number) => void;
+    applyParagraphSpacing: (before: number, after: number) => void;
+  } | undefined>(undefined);
+
+  // Page count reported by TextEditor via ResizeObserver.
+  const [pageCount, setPageCount] = createSignal(1);
+  const [currentPage, setCurrentPage] = createSignal(1);
+
+  // Word count derived from the active session's HTML.
+  const wordCount = createMemo(() => {
+    const html = activeSession()?.editorHtml ?? "";
+    if (!html) return 0;
+    const text = html.replace(/<[^>]*>/g, " ").replace(/&[^;]+;/g, " ");
+    return text.trim().split(/\s+/).filter((w) => w.length > 0).length;
+  });
+
   const setStatus = (text: string, tone: StatusTone = "neutral") => {
     setStatusMessage({ text, tone });
   };
@@ -88,6 +114,8 @@ export function DesktopApp() {
   });
 
   const openEditorSession = (session: DesktopDocumentSession, nextStatus?: DesktopStatusMessage) => {
+    setPageCount(1);
+    setCurrentPage(1);
     setCurrentSession(session);
     setViewMode("editor");
     if (nextStatus) {
@@ -234,10 +262,14 @@ export function DesktopApp() {
                     documentSessionKey={session().id}
                     initialDocumentHtml={session().editorHtml}
                     onDocumentChange={updateCurrentSessionFromEditor}
+                    onCursorPageChange={setCurrentPage}
                     fontCapabilities={desktopFontCapabilities}
                     onRegisterInsertIcon={(fn) => { insertIconRef = fn; }}
                     onRegisterListActions={(actions) => setListActions(actions)}
                     onRegisterInsertImage={(actions) => { insertImageRef = actions; }}
+                    onRegisterFormattingActions={(actions) => setFormattingActions(actions)}
+                    onPageCountChange={setPageCount}
+                    margins={margins()}
                   />
                 }
                 secondary={
@@ -253,27 +285,13 @@ export function DesktopApp() {
                     onSetListStartNumber={(n) => listActions()?.applyStartNumber(n)}
                     onSetCustomIconBullet={(svg) => listActions()?.applyCustomIconBullet(svg)}
                     onRemoveCustomIconBullet={() => listActions()?.removeCustomIconBullet()}
+                    margins={margins()}
+                    onMarginsChange={setMargins}
+                    lineSpacing={formattingActions()?.lineSpacing()}
+                    onLineSpacingChange={(v) => formattingActions()?.applyLineSpacing(v)}
+                    onParagraphIndentChange={(l, r, f, h) => formattingActions()?.applyParagraphIndent(l, r, f, h)}
+                    onParagraphSpacingChange={(b, a) => formattingActions()?.applyParagraphSpacing(b, a)}
                   />
-                }
-                utilities={
-                  <div class="desktop-runtime__utilities">
-                    <div class="desktop-runtime__utility-block">
-                      <span class="desktop-runtime__utility-label">Document mode</span>
-                      <span class="desktop-runtime__utility-value">{session().workspaceMode}</span>
-                    </div>
-                    <div class="desktop-runtime__utility-block">
-                      <span class="desktop-runtime__utility-label">Persistence</span>
-                      <span class="desktop-runtime__utility-value">
-                        {session().path ? session().path : "Unsaved desktop draft"}
-                      </span>
-                    </div>
-                    <div class="desktop-runtime__utility-block">
-                      <span class="desktop-runtime__utility-label">Extensions queued</span>
-                      <span class="desktop-runtime__utility-value">
-                        {desktopBootstrapPlan.extensionQueue.length}
-                      </span>
-                    </div>
-                  </div>
                 }
               />
               );
@@ -281,6 +299,13 @@ export function DesktopApp() {
           </Show>
         </div>
       </div>
+      {/* Status bar — sticky to the bottom of the runtime column */}
+      <Show when={isEditorMode()}>
+        <div class="desktop-runtime__statusbar">
+          <span>{wordCount()} {wordCount() === 1 ? "word" : "words"}</span>
+          <span>Page {Math.max(1, Math.min(currentPage(), pageCount()))} of {pageCount()}</span>
+        </div>
+      </Show>
     </div>
   );
 }

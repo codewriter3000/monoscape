@@ -21,7 +21,8 @@
       "@monoscape/ui": ["packages/ui/src/index.tsx"],
       "@monoscape/extension-sdk": ["packages/extension-sdk/src/index.ts"],
       "@monoscape/extension-citations": ["extensions/builtin/citations/src/index.ts"],
-      "@monoscape/extension-review": ["extensions/builtin/review/src/index.ts"]
+      "@monoscape/extension-review": ["extensions/builtin/review/src/index.ts"],
+      "@monoscape/extension-theme": ["extensions/builtin/theme/src/index.ts"]
     }
   }
 }

@@ -5,7 +5,8 @@ import { RightPanelInsertTab } from "./RightPanelInsertTab";
 import { RightPanelStyleTab } from "./RightPanelStyleTab";
 import { RightPanelLayoutTab } from "./RightPanelLayoutTab";
 import { RightPanelListSection } from "./RightPanelListSection";
-import type { ListState, BulletStyle, NumberStyle } from "./editor/hooks/useListFormatting";
+import type { ListState, BulletStyle, NumberStyle } from "../editor/hooks/useListFormatting";
+import type { DocumentMargins } from "../editor/constants";
 
 export interface RightPanelProps {
   /** Called when the user confirms an icon insertion from the Insert tab. */
@@ -22,6 +23,15 @@ export interface RightPanelProps {
   onSetListStartNumber?: (n: number) => void;
   onSetCustomIconBullet?: (svg: string) => void;
   onRemoveCustomIconBullet?: () => void;
+  /** Current page margins; drives the Layout tab controls. */
+  margins?: DocumentMargins;
+  /** Called when the user changes margins in the Layout tab. */
+  onMarginsChange?: (margins: DocumentMargins) => void;
+  /** Current line-spacing value from the editor selection. */
+  lineSpacing?: number | null;
+  onLineSpacingChange?: (v: number) => void;
+  onParagraphIndentChange?: (left: number, right: number, firstLine: number, hanging: number) => void;
+  onParagraphSpacingChange?: (before: number, after: number) => void;
 }
 
 export function RightPanel(props: RightPanelProps) {
@@ -80,7 +90,14 @@ export function RightPanel(props: RightPanelProps) {
           />
         </Show>
         <Show when={tab() === "layout"}>
-          <RightPanelLayoutTab />
+          <RightPanelLayoutTab
+            margins={props.margins}
+            onMarginsChange={props.onMarginsChange}
+            lineSpacing={props.lineSpacing}
+            onLineSpacingChange={props.onLineSpacingChange}
+            onParagraphIndentChange={props.onParagraphIndentChange}
+            onParagraphSpacingChange={props.onParagraphSpacingChange}
+          />
         </Show>
       </div>
     </div>

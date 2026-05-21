@@ -12,6 +12,8 @@ export interface UseBlockFormattingResult {
   applyAlignment: (alignment: TextAlignment) => void;
   applyLineSpacing: (spacing: number) => void;
   applyStyleSet: (styleSetId: AcademicStyleSetId, blockStyleId: AcademicBlockStyleId) => void;
+  applyParagraphIndent: (left: number, right: number, firstLine: number, hanging: number) => void;
+  applyParagraphSpacing: (before: number, after: number) => void;
   syncFromRange: (range: Range) => void;
 }
 
@@ -190,12 +192,47 @@ export function useBlockFormatting(
     syncFromRange(range);
   };
 
+  const applyParagraphIndent = (left: number, right: number, firstLine: number, hanging: number) => {
+    const range = selection.restoreRange();
+    if (!range) return;
+    const editor = editorRef();
+    if (!editor) return;
+
+    // Combined left edge = left indent + hanging (body text starts there)
+    const totalLeft = left + hanging;
+    // first-line text-indent is the additional first-line offset relative to combined left
+    const textIndent = firstLine - hanging;
+    collectAffectedBlocks(range, editor).forEach((block) => {
+      block.style.paddingLeft  = totalLeft  !== 0 ? `${totalLeft}in`  : "";
+      block.style.paddingRight = right      !== 0 ? `${right}in`      : "";
+      block.style.textIndent   = textIndent !== 0 ? `${textIndent}in` : "";
+    });
+    selection.setSelection(range);
+    syncFromRange(range);
+  };
+
+  const applyParagraphSpacing = (before: number, after: number) => {
+    const range = selection.restoreRange();
+    if (!range) return;
+    const editor = editorRef();
+    if (!editor) return;
+
+    collectAffectedBlocks(range, editor).forEach((block) => {
+      block.style.marginTop    = `${before}pt`;
+      block.style.marginBottom = `${after}pt`;
+    });
+    selection.setSelection(range);
+    syncFromRange(range);
+  };
+
   return {
     selectedLineSpacing,
     selectedAlignment,
     applyAlignment,
     applyLineSpacing,
     applyStyleSet,
+    applyParagraphIndent,
+    applyParagraphSpacing,
     syncFromRange
   };
 }

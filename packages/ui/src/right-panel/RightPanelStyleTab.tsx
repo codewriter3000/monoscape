@@ -12,7 +12,7 @@ import {
   type UnderlineStyle,
   type BaselineMode
 } from "./rightPanelHelpers";
-import { SegmentedControl } from "./SegmentedControl";
+import { SegmentedControl } from "../common/SegmentedControl";
 
 export function RightPanelStyleTab() {
   const [paraStyle, setParaStyle] = createSignal("normal");

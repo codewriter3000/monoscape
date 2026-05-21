@@ -1,42 +1,4 @@
-/* Monoscape design tokens — imported once, available globally via CSS custom properties */
-
-:root {
-  /* ── Text ─────────────────────────────────────────── */
-  --mn-text:        #172033;
-  --mn-text-muted:  #52607a;
-
-  /* ── Borders ──────────────────────────────────────── */
-  --mn-border:       #d9dde6;
-  --mn-border-input: #c3cad8;
-
-  /* ── Accent / interactive ─────────────────────────── */
-  --mn-accent:        #005fcc;
-  --mn-accent-light:  #dce8ff;
-  --mn-accent-border: #89b3f0;
-  --mn-accent-focus:  rgba(0, 95, 204, 0.2);
-  --mn-focus:         #4a90d9;
-
-  /* ── Brand ────────────────────────────────────────── */
-  --mn-brand-dark: #234171;
-  --mn-brand-mid:  #2f5c9e;
-
-  /* ── Surfaces ─────────────────────────────────────── */
-  --mn-surface:        #ffffff;
-  --mn-surface-hover:  #f0f3f6;
-  --mn-surface-active: #edf3ff;
-
-  /* ── Typography ───────────────────────────────────── */
-  --mn-font-ui: Inter, "Segoe UI", system-ui, sans-serif;
-
-  /* ── Radii ────────────────────────────────────────── */
-  --mn-radius-xs:   4px;
-  --mn-radius-sm:   8px;
-  --mn-radius-md:   14px;
-  --mn-radius-lg:   20px;
-  --mn-radius-xl:   28px;
-  --mn-radius-pill: 999px;
-
-  /* ── Shadows ──────────────────────────────────────── */
-  --mn-shadow-dropdown: 0 8px 24px rgba(23, 32, 51, 0.12);
-  --mn-shadow-panel:    0 18px 36px rgba(15, 23, 42, 0.14);
-}
+/* Design tokens have moved to extensions/builtin/theme/src/tokens.css.
+ * This file is intentionally empty. Apps must load the theme extension at
+ * startup — see apps/desktop/src/main.ts for the canonical example.
+ */

@@ -1,5 +1,4 @@
 /* Shared toolbar class styles for @monoscape/ui toolbar components */
-@import "../vars.css";
 
 .toolbar__container {
   display: flex;

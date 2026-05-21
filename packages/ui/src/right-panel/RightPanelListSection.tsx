@@ -7,9 +7,9 @@ import {
   compactNumInput,
   SectionWrap,
 } from "./rightPanelHelpers";
-import { SegmentedControl } from "./SegmentedControl";
+import { SegmentedControl } from "../common/SegmentedControl";
 import { IconPickerModal } from "./IconPickerModal";
-import type { ListState, ListType, BulletStyle, NumberStyle } from "./editor/hooks/useListFormatting";
+import type { ListState, ListType, BulletStyle, NumberStyle } from "../editor/hooks/useListFormatting";
 
 export interface RightPanelListSectionProps {
   listState?: ListState;

@@ -108,6 +108,270 @@ describe("Keyboard flow", () => {
     dispose();
   });
 
+  it("syncs the caret page after Ctrl+Enter inserts a hard page break", async () => {
+    const onCursorPageChange = vi.fn();
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView
+    });
+
+    const { editor, dispose } = renderEditor(host, { onCursorPageChange });
+
+    editor.innerHTML = "<p>Alpha</p>";
+    Object.defineProperty(editor, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 100, 0, 2112))
+    });
+
+    const initialBlock = editor.querySelector("p");
+    const textNode = initialBlock?.firstChild;
+    if (!(initialBlock instanceof HTMLParagraphElement) || !textNode) {
+      throw new Error("Expected an initial paragraph for the page break test.");
+    }
+
+    Object.defineProperty(initialBlock, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 180, 0, 880))
+    });
+
+    (document.execCommand as ReturnType<typeof vi.fn>).mockImplementation((command: string) => {
+      const sel = document.getSelection();
+      if (!sel?.rangeCount) {
+        return true;
+      }
+
+      if (command !== "insertParagraph") {
+        return true;
+      }
+
+      const currentBlock = editor.querySelector("p:last-of-type");
+      if (!(currentBlock instanceof HTMLParagraphElement)) {
+        return true;
+      }
+
+      const newBlock = document.createElement("p");
+      newBlock.appendChild(document.createElement("br"));
+      Object.defineProperty(newBlock, "getBoundingClientRect", {
+        configurable: true,
+        value: vi.fn(() => new DOMRect(0, 1220, 0, 24))
+      });
+
+      currentBlock.after(newBlock);
+
+      const newRange = document.createRange();
+      newRange.setStart(newBlock, 0);
+      newRange.collapse(true);
+      Object.defineProperty(newRange, "getClientRects", {
+        configurable: true,
+        value: vi.fn(() => [new DOMRect(0, 180, 0, 0)])
+      });
+      Object.defineProperty(newRange, "getBoundingClientRect", {
+        configurable: true,
+        value: vi.fn(() => new DOMRect(0, 180, 0, 0))
+      });
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+      document.dispatchEvent(new Event("selectionchange"));
+      return true;
+    });
+
+    selectRange(textNode, textNode.textContent?.length ?? 0, textNode, textNode.textContent?.length ?? 0);
+    await flushMicrotasks();
+
+    const pageBreakEvent = dispatchEditorKey(editor, "Enter", { ctrlKey: true });
+    await flushMicrotasks();
+    await flushMicrotasks();
+
+    expect(pageBreakEvent.defaultPrevented).toBe(true);
+    expect(onCursorPageChange).toHaveBeenLastCalledWith(2);
+    expect(scrollIntoView).toHaveBeenCalled();
+
+    dispose();
+  });
+
+  it("keeps the ruler rail pinned while moving the current-page marker", async () => {
+    const { editor, dispose } = renderEditor(host);
+
+    editor.innerHTML = "<p>Alpha</p><p>Beta</p>";
+    Object.defineProperty(editor, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 100, 0, 2112))
+    });
+
+    const blocks = editor.querySelectorAll("p");
+    const secondText = blocks[1]?.firstChild;
+    if (!(blocks[0] instanceof HTMLParagraphElement) || !(blocks[1] instanceof HTMLParagraphElement) || !secondText) {
+      throw new Error("Expected paragraphs for the ruler rail test.");
+    }
+
+    Object.defineProperty(blocks[0], "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 180, 0, 24))
+    });
+    Object.defineProperty(blocks[1], "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 1220, 0, 24))
+    });
+
+    selectRange(secondText, 0, secondText, 0);
+    await flushMicrotasks();
+
+    const wrap = host.querySelector(".monoscape-ruler-v-wrap");
+    const current = host.querySelector(".monoscape-ruler-v-current");
+    if (!(wrap instanceof HTMLDivElement) || !(current instanceof HTMLDivElement)) {
+      throw new Error("Expected vertical ruler elements.");
+    }
+
+    expect(wrap.style.top).toBe("24px");
+    expect(current.style.transform).toBe("translateY(1056px)");
+
+    dispose();
+  });
+
+  it("collapses trailing empty hard-break pages after input-driven deletions", async () => {
+    vi.useFakeTimers();
+
+    const onPageCountChange = vi.fn();
+    const { editor, dispose } = renderEditor(host, { onPageCountChange });
+
+    editor.innerHTML = [
+      "<p>Alpha</p>",
+      '<div class="monoscape-page-break-spacer" style="height: 920px;"><br></div>',
+      "<p><br></p>",
+      '<div class="monoscape-page-break-spacer" style="height: 920px;"><br></div>',
+      "<p><br></p>"
+    ].join("");
+
+    Object.defineProperty(editor, "scrollHeight", {
+      configurable: true,
+      get: () => (editor.querySelector(".monoscape-page-break-spacer") ? 3 * 1056 : 1056)
+    });
+    Object.defineProperty(editor, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 100, 0, 3168))
+    });
+
+    const firstBlock = editor.querySelector("p");
+    const firstText = firstBlock?.firstChild;
+    if (!(firstBlock instanceof HTMLParagraphElement) || !firstText) {
+      throw new Error("Expected a first paragraph for the trailing-page cleanup test.");
+    }
+
+    Object.defineProperty(firstBlock, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 180, 0, 24))
+    });
+
+    selectRange(firstText, firstText.textContent?.length ?? 0, firstText, firstText.textContent?.length ?? 0);
+    await flushMicrotasks();
+
+    editor.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushMicrotasks();
+    vi.advanceTimersByTime(80);
+    await flushMicrotasks();
+
+    expect(editor.querySelector(".monoscape-page-break-spacer")).toBeNull();
+    expect(editor.querySelectorAll("p")).toHaveLength(1);
+    expect(onPageCountChange).toHaveBeenLastCalledWith(1);
+
+    vi.useRealTimers();
+    dispose();
+  });
+
+  it("keeps ordinary trailing blank paragraphs when no hard page break exists", async () => {
+    const { editor, dispose } = renderEditor(host);
+
+    editor.innerHTML = "<p>Alpha</p><p><br></p>";
+    Object.defineProperty(editor, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 100, 0, 1056))
+    });
+
+    const firstBlock = editor.querySelector("p");
+    const firstText = firstBlock?.firstChild;
+    if (!(firstBlock instanceof HTMLParagraphElement) || !firstText) {
+      throw new Error("Expected a first paragraph for the blank-paragraph preservation test.");
+    }
+
+    Object.defineProperty(firstBlock, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 180, 0, 24))
+    });
+
+    selectRange(firstText, 0, firstText, 0);
+    await flushMicrotasks();
+
+    editor.dispatchEvent(new Event("input", { bubbles: true }));
+    await flushMicrotasks();
+
+    expect(editor.querySelectorAll("p")).toHaveLength(2);
+    expect(editor.querySelector(".monoscape-page-break-spacer")).toBeNull();
+
+    dispose();
+  });
+
+  it("collapses a trailing hard-break page with a single Backspace", async () => {
+    vi.useFakeTimers();
+
+    const onPageCountChange = vi.fn();
+    const onCursorPageChange = vi.fn();
+    const { editor, dispose } = renderEditor(host, { onPageCountChange, onCursorPageChange });
+
+    editor.innerHTML = [
+      "<p>Alpha</p>",
+      '<div class="monoscape-page-break-spacer" style="height: 920px;"><br></div>',
+      "<p><br></p>"
+    ].join("");
+
+    Object.defineProperty(editor, "scrollHeight", {
+      configurable: true,
+      get: () => (editor.querySelector(".monoscape-page-break-spacer") ? 2 * 1056 : 1056)
+    });
+    Object.defineProperty(editor, "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 100, 0, 2112))
+    });
+
+    const blocks = editor.querySelectorAll("p");
+    const firstText = blocks[0]?.firstChild;
+    if (!(blocks[0] instanceof HTMLParagraphElement) || !(blocks[1] instanceof HTMLParagraphElement) || !firstText) {
+      throw new Error("Expected paragraphs for the single-Backspace page-collapse test.");
+    }
+
+    Object.defineProperty(blocks[0], "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 180, 0, 24))
+    });
+    Object.defineProperty(blocks[1], "getBoundingClientRect", {
+      configurable: true,
+      value: vi.fn(() => new DOMRect(0, 1220, 0, 24))
+    });
+
+    const trailingRange = document.createRange();
+    trailingRange.setStart(blocks[1], 0);
+    trailingRange.collapse(true);
+    document.getSelection()?.removeAllRanges();
+    document.getSelection()?.addRange(trailingRange);
+    document.dispatchEvent(new Event("selectionchange"));
+    await flushMicrotasks();
+
+    const backspaceEvent = dispatchEditorKey(editor, "Backspace");
+    await flushMicrotasks();
+    vi.advanceTimersByTime(80);
+    await flushMicrotasks();
+
+    expect(backspaceEvent.defaultPrevented).toBe(true);
+    expect(editor.querySelector(".monoscape-page-break-spacer")).toBeNull();
+    expect(editor.querySelectorAll("p")).toHaveLength(1);
+    expect(onPageCountChange).toHaveBeenLastCalledWith(1);
+    expect(onCursorPageChange).toHaveBeenLastCalledWith(1);
+    expect(blocks[0].contains(document.getSelection()?.anchorNode ?? null)).toBe(true);
+
+    vi.useRealTimers();
+    dispose();
+  });
+
   it("treats partial multi-line selections as whole-line indent and outdent operations", async () => {
     const { editor, dispose } = renderEditor(host);
 

@@ -4,7 +4,8 @@ export type ExtensionSurface =
   | "document.command-bar"
   | "document.sidebar"
   | "document.review-pane"
-  | "document.status-bar";
+  | "document.status-bar"
+  | "app.theme";
 
 export interface ExtensionManifest {
   id: string;

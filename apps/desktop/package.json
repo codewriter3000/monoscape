@@ -16,6 +16,7 @@
     "@monoscape/document-core": "file:../../packages/document-core",
     "@monoscape/extension-citations": "file:../../extensions/builtin/citations",
     "@monoscape/extension-review": "file:../../extensions/builtin/review",
+    "@monoscape/extension-theme": "file:../../extensions/builtin/theme",
     "@monoscape/kernel": "file:../../packages/kernel",
     "@monoscape/ui": "file:../../packages/ui",
     "@tauri-apps/api": "^1.6.0",

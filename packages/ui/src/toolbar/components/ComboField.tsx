@@ -152,7 +152,7 @@ export function ComboField<T>(props: ComboFieldProps<T>) {
         >
           <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 12px;background:#f7f9fc;min-width:0;width:100px;">
             <Show when={props.label}>
-              <span style="font-weight:700;font-size:0.65rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">{props.label}</span>
+              <span style="font-weight:500;font-size:0.75rem;color:black;letter-spacing:0.2px;line-height:1;margin-bottom:2px;">{props.label}</span>
             </Show>
             <input
               ref={(el) => {

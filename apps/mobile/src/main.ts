@@ -15,4 +15,8 @@ if (!(root instanceof HTMLElement)) {
 render(MobileApp, root);
 logger.info("Mobile renderer attached.", { extensionQueue: mobileBootstrapPlan.extensionQueue });
 
+requestAnimationFrame(() => {
+  (window as Window & { __hideSplash?: () => void }).__hideSplash?.();
+});
+
 export { MobileApp, mobileBootstrapPlan };

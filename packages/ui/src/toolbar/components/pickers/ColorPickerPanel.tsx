@@ -3,7 +3,7 @@ import { ColorFormatInputs } from "../ColorFormatInputs";
 import { ColorWheel } from "../ColorWheel";
 import { ColorPyramid } from "../ColorPyramid";
 import { ColorSquare } from "../ColorSquare";
-import { SegmentedControl } from "../../../SegmentedControl";
+import { SegmentedControl } from "../../../common/SegmentedControl";
 import type { NormalizedColor, ColorModel, ColorPickerMode } from "@monoscape/document-core";
 
 interface ColorPickerPanelProps {

@@ -2,6 +2,21 @@
 
 export const EDITOR_KEYBOARD_HELP_ID = "monoscape-editor-help";
 
+/** Page margins expressed in inches. */
+export interface DocumentMargins {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
+export const DEFAULT_DOCUMENT_MARGINS: DocumentMargins = {
+  top: 1.0,
+  bottom: 1.0,
+  left: 1.25,
+  right: 1.25,
+};
+
 export const EDITOR_STYLES = `
   .monoscape-toolbar {
     position: sticky;
@@ -11,11 +26,75 @@ export const EDITOR_STYLES = `
     border-radius: 18px 18px 0 0;
   }
 
+  .monoscape-ruler-row {
+    display: flex;
+    justify-content: center;
+    /* left: 24px base + 20px RULER_THICKNESS to offset the vertical ruler column */
+    padding: 0 24px 0 44px;
+    border-bottom: 1px solid #d9dde6;
+    background: #f6f8fb;
+  }
+
+  .monoscape-editor-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    /* flex-start lets editor-frame grow to its natural content height so the
+       scroll container actually overflows and the scrollbar appears */
+    align-items: flex-start;
+    /* positioning context for the absolute vertical ruler */
+    position: relative;
+  }
+
+  .monoscape-ruler-v-wrap {
+    /* absolute overlay pinned to the document body; its height is set inline
+       to the full document height so cursor-page changes don't affect the
+       scroll container's overflow range */
+    position: absolute;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+    width: 20px;
+    pointer-events: none;
+  }
+
+  .monoscape-ruler-v-current {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    background: #f6f8fb;
+    border-right: 1px solid #d9dde6;
+  }
+
   .monoscape-editor-frame {
     display: flex;
     justify-content: center;
-    padding: 24px;
-    background: linear-gradient(180deg, #edf2f8 0%, #e7ecf4 100%);
+    /* left padding = ruler width (20px) + original gap (24px) to leave
+       room for the absolute-positioned vertical ruler */
+    padding: 24px 24px 24px 44px;
+    flex: 1;
+  }
+
+  .monoscape-editor-pages-wrap {
+    position: relative;
+    width: min(100%, 8.5in);
+  }
+
+  .monoscape-page-break-bar {
+    position: absolute;
+    left: 1px;
+    right: 1px;
+    /* height and background are set via inline style (margin-aware) */
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .monoscape-page-break-spacer {
+    display: block;
+    pointer-events: none;
+    user-select: none;
   }
 
   .monoscape-editor {
@@ -98,16 +177,23 @@ export const EDITOR_STYLES = `
       width: 100% !important;
       min-height: 70vh !important;
       padding: 28px 24px !important;
-      border-radius: 8px !important;
+      border-radius: 0 !important;
     }
   }
 `;
 
-export function buildEditorInlineStyle(fontStack: string, fontSize: number, lineSpacing: number) {
+export function buildEditorInlineStyle(
+  fontStack: string,
+  fontSize: number,
+  lineSpacing: number,
+  margins?: DocumentMargins
+) {
+  const m = margins ?? DEFAULT_DOCUMENT_MARGINS;
   return (
     `font-family:${fontStack};font-size:${fontSize}pt;line-height:${lineSpacing};text-align:left;` +
-    "width:min(100%,8.5in);min-height:calc(11in - 1.8in);padding:0.9in 0.85in;" +
-    "border:1px solid #d9dde6;border-radius:10px;background:#fff;color:#172033;" +
+    `width:min(100%,8.5in);min-height:11in;` +
+    `padding:${m.top}in ${m.right}in ${m.bottom}in ${m.left}in;` +
+    "box-sizing:border-box;border:1px solid #d9dde6;border-radius:0;background-color:#fff;color:#172033;" +
     "box-shadow:0 22px 40px rgba(15,23,42,0.12);" +
     "white-space:pre-wrap;word-break:break-word;outline:none;tab-size:4;"
   );
