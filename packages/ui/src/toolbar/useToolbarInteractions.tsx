@@ -69,7 +69,12 @@ export function useToolbarInteractions(options: ToolbarInteractionOptions) {
       case keytipFor("right"):
       case keytipFor("justify"):
       case keytipFor("indent"):
-      case keytipFor("outdent"): {
+      case keytipFor("outdent"):
+      case keytipFor("undo"):
+      case keytipFor("redo"):
+      case keytipFor("cut"):
+      case keytipFor("copy"):
+      case keytipFor("paste"): {
         const entry = Object.entries(FORMATTING_TOOLBAR_KEYTIPS).find(([, value]) => value === key);
         return entry ? triggerToolbarButton(entry[0] as ToolbarButtonId) : false;
       }

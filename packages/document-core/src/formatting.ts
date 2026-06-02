@@ -34,11 +34,16 @@ export const FORMATTING_TOOLBAR_KEYTIPS = {
   superscript: "P",
   subscript: "D",
   left: "A",
-  center: "C",
+  center: "E",
   right: "R",
   justify: "J",
   indent: "N",
-  outdent: "O"
+  outdent: "O",
+  undo: "Z",
+  redo: "Y",
+  cut: "X",
+  copy: "C",
+  paste: "V"
 } as const;
 
 export function emptyFormattingState(): FormattingState {

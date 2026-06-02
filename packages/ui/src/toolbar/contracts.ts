@@ -21,5 +21,8 @@ export interface ToolbarCommandHandlers {
   onColorChange: (color: NormalizedColor | null) => void;
   onIndent: () => void;
   onOutdent: () => void;
+  onCut: () => void;
+  onCopy: () => void;
+  onPaste: () => void;
   onStyleSetApply: (styleSetId: string, blockStyleId: string) => void;
 }

@@ -802,6 +802,15 @@ export function TextEditor(props: TextEditorProps) {
           onColorChange={handleColorChange}
           onIndent={toolbarHandlers.onIndent}
           onOutdent={toolbarHandlers.onOutdent}
+          onUndo={() => document.execCommand('undo')}
+          onRedo={() => document.execCommand('redo')}
+          onCut={() => document.execCommand('cut')}
+          onCopy={() => document.execCommand('copy')}
+          onPaste={() => {
+            // For paste, we want to use unformatted pasting by default
+            // This is achieved by using execCommand('paste') which will paste as plain text
+            document.execCommand('paste');
+          }}
           onStyleSetApply={toolbarHandlers.onStyleSetApply}
           onAddCatalogFont={fontLibrary.addCatalogFont}
           onRemoveFont={fontLibrary.removeFont}
