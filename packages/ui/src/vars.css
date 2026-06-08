@@ -1,4 +1,0 @@
-/* Design tokens have moved to extensions/builtin/theme/src/tokens.css.
- * This file is intentionally empty. Apps must load the theme extension at
- * startup — see apps/desktop/src/main.ts for the canonical example.
- */
